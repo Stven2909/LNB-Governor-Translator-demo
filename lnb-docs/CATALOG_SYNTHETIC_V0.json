@@ -1,0 +1,44 @@
+{
+  "catalog_version": "CATALOG_SYNTHETIC_V0",
+  "contract_version": "CONTRACT_SYNTHETIC_V0",
+  "description": "Whitelist sintética para PoC vertical DEV. No es el catálogo real de LNB. Valida fuera del modelo (determinista) toda respuesta APPROVED antes del Traductor/JDBC.",
+  "entities": {
+    "synthetic_payment": {
+      "operations": ["INSERT"],
+      "eventTypes": ["SYNTHETIC_PAYMENT_REQUESTED"],
+      "required_fields": ["claimId", "amount", "operationDate", "beneficiary"],
+      "target_table": "SYNTHETIC_PAYMENTS",
+      "field_mapping": {
+        "claimId": "COD_RECLAMO",
+        "amount": "MONTO",
+        "operationDate": "FECHA_OPER",
+        "beneficiary": "BENEFICIARIO"
+      },
+      "value_rules": {},
+      "columns": {
+        "COD_RECLAMO": { "type": "VARCHAR(64)", "nullable": false },
+        "MONTO": { "type": "DECIMAL(10,2)", "nullable": false },
+        "FECHA_OPER": { "type": "DATE", "nullable": false },
+        "BENEFICIARIO": { "type": "VARCHAR(100)", "nullable": false },
+        "OPERATION_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "PK para idempotencia, proviene del evento decodificado (message.data)" },
+        "TRACE_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "Trazabilidad end-to-end, proviene del evento decodificado" },
+        "EVENT_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "Identidad del evento, proviene del evento decodificado" },
+        "PAYLOAD_HASH": { "type": "VARCHAR(64)", "nullable": false, "note": "Hash SHA-256 canónico del payload para recuperación in-doubt" }
+      }
+    }
+  },
+  "rules": {
+    "worker_pre_filter": "El Worker debe pre-filtrar deterministamente (entity, operation, eventType) contra este catálogo antes de invocar a Vertex AI. Si no coincide -> REJECTED sintáctico directo.",
+    "canonicalization": "El PAYLOAD_HASH debe generarse concatenando claves en orden alfabético sin espacios y números monetarios a 2 decimales (%.2f), aplicando SHA-256 hex.",
+    "atomic_reservation": "La reserva en WORKER_OPERATION_STATE debe hacerse vía INSERT directo. La colisión de Primary Key (PK violation) marca un evento duplicado o en vuelo, prohibiendo check-then-act.",
+    "recovery_in_doubt": "En caso de falla post-commit JDBC, la reentrega consulta SYNTHETIC_PAYMENTS comparando el PAYLOAD_HASH persistido ahí para promover a SUCCEEDED sin reinsertar.",
+    "governor_must_match_catalog": "Si la respuesta APPROVED del Gobernador no coincide con este catálogo (target_table, field_mapping o value_rules) -> DLQ_QUARANTINED.",
+    "no_invented_columns": "El Traductor solo puede usar columnas listadas en field_mapping más las 4 columnas técnicas (OPERATION_ID, TRACE_ID, EVENT_ID, PAYLOAD_HASH). Cualquier columna extra -> TRANSLATION_ERROR.",
+    "prepared_statement_only": "JDBC debe usar PreparedStatement de 8 parámetros (?, ?, ?, ?, ?, ?, ?, ?). Tabla y columnas vienen del catálogo, nunca de texto libre.",
+    "status_classification": {
+      "REJECTED": "Rechazo por regla de negocio u operación no autorizada. Se persiste estado y se envía ACK.",
+      "DLQ_QUARANTINED": "Fallo sintáctico, JSON corrupto, Base64 inválido, alucinación del modelo o mismatch de PAYLOAD_HASH. Se guarda evidencia y se envía ACK tras persistir.",
+      "TRANSLATION_ERROR": "El Traductor produjo tabla/columnas fuera de la whitelist del catálogo ('no_invented_columns') o parámetros != 8. Se guarda evidencia y se envía ACK tras persistir."
+    }
+  }
+}

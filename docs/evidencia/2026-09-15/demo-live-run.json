@@ -1,0 +1,37 @@
+[
+    {
+        "file":  "01-caso1-SUCCEEDED.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"SUCCEEDED\",\"operationId\":\"op-001\",\"reason\":\"Operación validada correctamente\"}"
+    },
+    {
+        "file":  "02-caso1-replica-IDEMPOTENT.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"IDEMPOTENT\",\"operationId\":\"op-001\",\"reason\":\"Duplicate event already processed (PAYLOAD_HASH matched)\"}"
+    },
+    {
+        "file":  "03-caso3-REJECTED.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"REJECTED\",\"operationId\":\"op-rej-3\",\"reason\":\"Operation not allowed or entity not authorized\"}"
+    },
+    {
+        "file":  "04-caso3b-REJECTED.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"REJECTED\",\"operationId\":\"op-del-3\",\"reason\":\"Operation not allowed or entity not authorized\"}"
+    },
+    {
+        "file":  "05-caso6-b64-DLQ.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"DLQ_QUARANTINED\",\"operationId\":\"-\",\"reason\":\"Invalid Base64 envelope data\"}"
+    },
+    {
+        "file":  "06-caso6-json-DLQ.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"DLQ_QUARANTINED\",\"operationId\":\"-\",\"reason\":\"Malformed JSON payload\"}"
+    },
+    {
+        "file":  "07-caso6-faltan-DLQ.json",
+        "http":  200,
+        "body":  "{\"ack\":true,\"status\":\"DLQ_QUARANTINED\",\"operationId\":\"-\",\"reason\":\"Structural validation failed: operationId required, traceId required, occurredAt must be ISO8601, payload required\"}"
+    }
+]
