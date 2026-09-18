@@ -12,7 +12,7 @@
 | Equipo | Correos |
 |---|---|
 | Integración | `alex@avanzatech.xyz`, `it@avanzatech.xyz` |
-| Agentes | `carlos@avanzatech.xyz`, `steven@avanzatech.xyz` — `henry@avanzatech.xyz` |
+| Agentes | `carlos@avanzatech.xyz`, `steven@avanzatech.xyz` — `henrry@avanzatech.xyz` (pendiente confirmar existencia/corrección) |
 
 ## 2. Permisos por equipo (usuarios)
 
@@ -45,9 +45,10 @@
 | Recurso | Valor |
 |---|---|
 | Proyecto | `proy-comercial-dev-lnb` |
-| Instancia BD | `lnbcentral_db_dev` — Cloud SQL (PostgreSQL 18.4) |
-| Sybase DEV | `192.168.2.14:5000` — conectividad verificada desde `poc-connect-sybase` |
-| VM puente | `poc-connect-sybase` (zona `us-central1-a`) |
+| Instancia Cloud SQL | `sql-comercial-dev-lnb` (us-central1) |
+| Base de datos | `lnbcentral_db_dev` — PostgreSQL 18.4 |
+| Sybase DEV | `192.168.2.14:5000` — conectividad verificada **desde la VM** `poc-connect-sybase` |
+| VM de conectividad | `poc-connect-sybase` (zona `us-central1-a`) — confirma TCP a Sybase; NO es puente automático Cloud Run→Sybase |
 | SA Cloud Run — integración | `sa-run-integracion-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com` |
 | SA Cloud Run — agentes | `sa-run-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com` |
 | SA Build — integración | `sa-build-integracion-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com` |
@@ -64,18 +65,37 @@
 
 ## 4. Implicaciones para la arquitectura del Worker/Prueba express
 
-1. **Validación de la Opción B (endpoint de reporte):** los usuarios del equipo de agentes NO tienen acceso a Cloud SQL (solo la SA de ejecución). El Worker no escribe en Cloud SQL; reporta a la API. Coherente con la MÍNIMA PRIVILEGIA de LNB.
-2. **DLQ físico real:** `topic-pagaduria-dev-deadletter` es la contraparte de nuestro `DLQ_QUARANTINED`; `subs-pagaduria-dev` es la cola del flujo de pagaduría.
-3. **Deploy path completo:** código fuente → Cloud Build → Artifact Registry → Cloud Run, con egress por Direct VPC a `subnet-comercial-dev-lnb-1` y acceso a Sybase DEV vía la VM.
-4. **Secretos:** `pago-premios-dev-db-*` solo los lee la SA de ejecución (nada de credenciales en el repo).
+1. **Recomendación de la Opción B (endpoint de reporte):** los usuarios del equipo de agentes NO tienen acceso a Cloud SQL, pero la SA de ejecución SÍ tiene `Cloud SQL client` (conexión técnica posible). El diseño **propone** que el Worker no escriba directo en Cloud SQL y reporte a la API por mínimo privilegio; no está "validada" aún (pendiente confirmación con la API).
+2. **DLQ de transporte vs. estado lógico:** `topic-pagaduria-dev-deadletter` es un tópico de la infraestructura de pagaduría; NO está confirmado que `subs-pagaduria-dev` tenga política dead-letter configurada. Nuestro `DLQ_QUARANTINED` es un estado lógico del Worker en `WORKER_OPERATION_STATE`, no un tópico. Si se requiere reencaminar eventos a un DLQ propio, es trabajo aparte (crear tópico/suscripción de la prueba).
+3. **Deploy path completo:** código fuente → Cloud Build → Artifact Registry → Cloud Run, con egress por Direct VPC a `subnet-comercial-dev-lnb-1`. La conectividad **Cloud Run → Sybase NO está verificada**: la VM confirmó TCP a `192.168.2.14:5000`, pero conferir esa ruta a Cloud Run (Direct VPC / Serverless VPC Access / VPN) está por demostrar.
+4. **Secretos:** `pago-premios-dev-db-*` parecen ser de la BD de pagaduría (Cloud SQL), **no asumir** credenciales Sybase. Solo los lee la SA de ejecución; nada de credenciales en el repo. Si la integración real requiere credenciales Sybase, solicitar secretos nuevos a Luis.
 5. **API Gateway:** pendiente de crear el gateway del API Master (lado de la API).
 
-## 5. Pendientes
+## 5. Idempotencia durable del Worker (ABIERTA)
+
+LNB no define aún dónde persiste el Worker su estado de idempotencia (`WORKER_OPERATION_STATE`). Alternativas candidatas (ninguna confirmada; no asumir):
+
+| Alternativa | Nota |
+|---|---|
+| Cloud SQL (tabla propia) | Existe en DEV; requiere plantear el acceso/uso con la API |
+| Endpoint de reserva administrado por la API | Variante del API Master; por confirmar |
+| Almacenamiento propio del Worker | Depende del runtime (Cloud Run sin filesystem durable) |
+| Tabla de control en Sybase | Pendiente decisión LNB; si existe, no confirmada |
+
+Esta decisión NO bloquea el alineamiento del PoC (fixture en memoria), sí lo hace la implementación real.
+
+## 6. Pendientes
+- [ ] Confirmar usuario `henrry@avanzatech.xyz` (no encontrado en Google; posible variante `henry@`) — Luis.
+- [ ] Confirmar si se reutilizan los tópicos/suscripciones de pagaduría o se crean tópicos propios de la prueba.
+- [ ] Confirmar si `subs-pagaduria-dev` tiene política dead-letter configurada.
+- [ ] Definir dónde persiste el Worker su idempotencia durable (sección 5).
+- [ ] Demostrar conectividad **Cloud Run → Sybase DEV** (Direct VPC / Serverless VPC Access / VPN); la VM solo confirma TCP desde ella.
+- [ ] Solicitar secretos/cuenta para credenciales Sybase DEV si la integración real lo requiere.
+- [ ] Confirmar con integración el uso de `sa-run-integracion-dev-lnb` vs. una SA propia del equipo de agentes para el Cloud Run del Worker.
 - [ ] Crear gateway del **API Master** (API Gateway).
-- [ ] Definir nombres de nuestro servicio Cloud Run / tópicos propios para la prueba (si no se reutilizan los de pagaduría).
 - [ ] Confirmaciones de Alex sobre el mecanismo de resultado (ver `MINUTA_ALEX_RESULTADO_V1.md`).
 
-## 6. Referencias
+## 7. Referencias
 - Correo de Luis (17 sep 2026, consolidación de accesos DEV).
 - `LNB_ER_Tecnico_PostgreSQL_DEV_102_v2.html` (ER 102 v2).
 - `MINUTA_ALEX_RESULTADO_V1.md` · `CONTRACT_EVENTO_V0.1.md`.
