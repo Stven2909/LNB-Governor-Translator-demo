@@ -67,8 +67,8 @@ final class EvidenceWriter {
     private static Map<String, Object> meta() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("proyecto", "Pagaduría Digital - prueba vertical PoC (LNB)");
-        m.put("contrato", "CONTRACT_SYNTHETIC_V0");
-        m.put("catalogo", "CATALOG_SYNTHETIC_V0");
+        m.put("contrato", "CONTRACT_PAYMENT_COMMITTED_V0.1");
+        m.put("catalogo", "CATALOG_PAYMENT_COMMITTED_V0.1");
         m.put("fixture", "FIXTURE_SYNTHETIC_DEV.sql");
         m.put("stack", "Java 21 + Spring Boot 4.1.1 (Framework 7)");
         m.put("fecha", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
@@ -93,7 +93,7 @@ final class EvidenceWriter {
         StringBuilder sb = new StringBuilder();
         sb.append("# Evidencia — Prueba Vertical Pagaduría Digital (LNB)\n\n");
         sb.append("- **Proyecto:** Pagaduría Digital — prueba vertical PoC\n");
-        sb.append("- **Contrato:** CONTRACT_SYNTHETIC_V0 · **Catálogo:** CATALOG_SYNTHETIC_V0\n");
+        sb.append("- **Contrato:** CONTRACT_PAYMENT_COMMITTED_V0.1 · **Catálogo:** CATALOG_PAYMENT_COMMITTED_V0.1\n");
         sb.append("- **Corrida:** ").append(meta().get("fecha")).append("\n");
         sb.append("- **Resultado:** ").append(res.get("pass")).append("/").append(res.get("total"))
                 .append(" escenarios PASS\n\n");

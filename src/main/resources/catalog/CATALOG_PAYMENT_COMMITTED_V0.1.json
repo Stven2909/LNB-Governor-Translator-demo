@@ -1,0 +1,61 @@
+{
+  "catalog_version": "CATALOG_PAYMENT_COMMITTED_V0.1",
+  "contract_version": "CONTRACT_PAYMENT_COMMITTED_V0.1",
+  "description": "Whitelist del fixture para el contrato PAYMENT_COMMITTED confirmado por Alex (prizes.payment). El eventVersion versiona el evento de Alex; contract_version/catalog_version son internos. Valida fuera del modelo (determinista) toda respuesta APPROVED antes del Traductor/JDBC.",
+  "aggregates": {
+    "prizes.payment": {
+      "eventTypes": ["PAYMENT_COMMITTED"],
+      "required_fields": ["paymentId", "claimId", "status", "paymentMethod", "grossAmount", "withholdingAmount", "netAmount", "currency"],
+      "target_table": "SYNTHETIC_PAYMENTS",
+      "field_mapping": {
+        "paymentId": "ID_PAGO",
+        "claimId": "COD_RECLAMO",
+        "status": "ESTADO",
+        "paymentMethod": "MEDIO_PAGO",
+        "grossAmount": "MONTO_BRUTO",
+        "withholdingAmount": "MONTO_RETENCION",
+        "netAmount": "MONTO_NETO",
+        "currency": "MONEDA"
+      },
+      "value_rules": {
+        "status.COMMITTED": "APROBADO",
+        "paymentMethod.CASH": "EFECTIVO",
+        "paymentMethod.TRANSFER": "TRANSFERENCIA",
+        "currency.USD": "USD"
+      },
+      "validationRules": {
+        "netAmount": "grossAmount - withholdingAmount"
+      },
+      "columns": {
+        "ID_PAGO": { "type": "VARCHAR(64)", "nullable": false },
+        "COD_RECLAMO": { "type": "VARCHAR(64)", "nullable": false },
+        "ESTADO": { "type": "VARCHAR(20)", "nullable": false },
+        "MEDIO_PAGO": { "type": "VARCHAR(20)", "nullable": false },
+        "MONTO_BRUTO": { "type": "DECIMAL(10,2)", "nullable": false },
+        "MONTO_RETENCION": { "type": "DECIMAL(10,2)", "nullable": false },
+        "MONTO_NETO": { "type": "DECIMAL(10,2)", "nullable": false },
+        "MONEDA": { "type": "CHAR(3)", "nullable": false },
+        "OPERATION_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "PK para idempotencia, proviene del evento decodificado (message.data)" },
+        "TRACE_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "workerTraceId TECNICO generado por el Worker (correlationId de Alex va en logs/contexto, no en la tabla)" },
+        "EVENT_ID": { "type": "VARCHAR(64)", "nullable": false, "note": "Identidad del evento, proviene del evento decodificado" },
+        "PAYLOAD_HASH": { "type": "VARCHAR(64)", "nullable": false, "note": "Hash SHA-256 canónico del operationData para recuperación in-doubt" }
+      }
+    }
+  },
+  "rules": {
+    "worker_pre_filter": "El Worker debe pre-filtrar deterministamente (aggregateType, eventType) contra este catálogo ANTES de reservar operationId y de invocar a Vertex AI. Si no coincide -> REJECTED directo.",
+    "validation_rules": "validationRules solo VALIDAN con BigDecimal.compareTo (p. ej. netAmount == grossAmount - withholdingAmount). No dependen del LLM ni recalcular silenciosamente el valor.",
+    "value_rules": "value_rules son transformaciones AUTORIZADAS (p. ej. status.COMMITTED -> codigo legacy aprobado). Nunca cómputo de negocio ni montos inventados.",
+    "canonicalization": "El PAYLOAD_HASH se genera con claves del operationData en orden alfabético sin espacios y montos a 2 decimales (%.2f), aplicando SHA-256 hex.",
+    "atomic_reservation": "La reserva en WORKER_OPERATION_STATE se hace vía INSERT directo (PK operationId). La colisión de PK marca un evento duplicado o en vuelo, prohibiendo check-then-act.",
+    "recovery_in_doubt": "En caso de falla post-commit JDBC, la reentrega consulta SYNTHETIC_PAYMENTS comparando el PAYLOAD_HASH persistido ahí para promover a SUCCEEDED sin reinsertar.",
+    "governor_must_match_catalog": "Si la respuesta APPROVED del Gobernador no coincide con este catálogo (target_table, field_mapping o value_rules) -> DLQ_QUARANTINED.",
+    "no_invented_columns": "El Traductor solo puede usar columnas listadas en field_mapping más las 4 técnicas (OPERATION_ID, TRACE_ID, EVENT_ID, PAYLOAD_HASH). Cualquier columna extra -> TRANSLATION_ERROR.",
+    "prepared_statement_only": "JDBC debe usar PreparedStatement de 12 parámetros (8 de negocio + 4 técnicas). Tabla y columnas vienen del catálogo, nunca de texto libre.",
+    "status_classification": {
+      "REJECTED": "Rechazo por regla de negocio, entidad no autorizada o validationRules incumplida. Se envía ACK REJECTED.",
+      "DLQ_QUARANTINED": "Fallo sintáctico, JSON corrupto, Base64 inválido, alucinación del modelo o mismatch de PAYLOAD_HASH. Se guarda evidencia y se envía ACK.",
+      "TRANSLATION_ERROR": "El Traductor produjo tabla/columnas fuera de la whitelist del catálogo ('no_invented_columns') o parámetros != 12."
+    }
+  }
+}

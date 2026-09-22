@@ -1,12 +1,12 @@
 package com.pagaduriasintetica.worker.translator;
 
-import com.pagaduriasintetica.worker.contract.GovernorContract;
-import com.pagaduriasintetica.worker.contract.SyntheticEvent;
+import com.pagaduriasintetica.worker.contract.TranslatorInput;
 import com.pagaduriasintetica.worker.contract.TranslatorResult;
 
-// Interfaz del Traductor de LNB: convierte evento + contrato del Gobernador en el plan SQL
-// (TranslatorResult) que el JDBC ejecuta contra Sybase, siempre dentro de la whitelist.
+// Interfaz del Traductor de LNB: convierte TranslatorInput (event + GovernorContract YA
+// validado + payloadHash + workerTraceId) en el plan SQL dentro de la whitelist del catálogo.
+// Nunca recalcula montos; solo valida la invariante y aplica value_rules autorizados.
 public interface Translator {
 
-    TranslatorResult translate(SyntheticEvent event, GovernorContract governor, String payloadHash);
+    TranslatorResult translate(TranslatorInput input);
 }

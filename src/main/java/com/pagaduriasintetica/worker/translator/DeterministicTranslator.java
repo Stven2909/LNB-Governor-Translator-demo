@@ -1,9 +1,8 @@
 package com.pagaduriasintetica.worker.translator;
 
 import com.pagaduriasintetica.worker.catalog.Catalog;
-import com.pagaduriasintetica.worker.contract.GovernorContract;
-import com.pagaduriasintetica.worker.contract.SyntheticEvent;
-import com.pagaduriasintetica.worker.contract.SyntheticPayload;
+import com.pagaduriasintetica.worker.contract.OperationData;
+import com.pagaduriasintetica.worker.contract.TranslatorInput;
 import com.pagaduriasintetica.worker.contract.TranslatorResult;
 import org.springframework.stereotype.Component;
 
@@ -12,10 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Traductor: en LNB convierte el evento + decisión del Gobernador en el SQL que se ejecuta
- * contra Sybase. Determinista y limitado al catálogo: solo columnas del field_mapping más las
- * 4 técnicas (OPERATION_ID, TRACE_ID, EVENT_ID, PAYLOAD_HASH), siempre INSERT con 8
- * parámetros (prepared statement). Cualquier columna libre = TRANSLATION_ERROR.
+ * Traductor: en LNB convierte TranslatorInput (evento + GovernorContract ya validado por el
+ * catálogo) en el PreparedStatement con 12 parámetros (8 de negocio del field_mapping + 4
+ * técnicas: OPERATION_ID, TRACE_ID, EVENT_ID, PAYLOAD_HASH). Determinista: solo columnas de la
+ * whitelist; aplica value_rules autorizados (p. ej. COMMITTED -> codigo legacy aprobado), no
+ * recalcula montos. Cualquier columna libre = TRANSLATION_ERROR.
  */
 @Component
 public class DeterministicTranslator implements Translator {
@@ -31,36 +31,48 @@ public class DeterministicTranslator implements Translator {
     }
 
     @Override
-    public TranslatorResult translate(SyntheticEvent event, GovernorContract governor, String payloadHash) {
-        Map<String, String> mapping = catalog.fieldMapping(event.entity());
-        String target = governor.target_table();
+    public TranslatorResult translate(TranslatorInput input) {
+        OperationData operationData = input.event().operationData();
+        String aggregateType = input.event().aggregateType();
+        Map<String, String> mapping = catalog.fieldMapping(aggregateType);
+        Map<String, String> valueRules = catalog.valueRules(aggregateType);
+        String target = input.governor().target_table();
 
         List<String> columns = new ArrayList<>();
         List<Object> params = new ArrayList<>();
         for (Map.Entry<String, String> e : mapping.entrySet()) {
             columns.add(e.getValue());
-            params.add(businessValue(event.payload(), e.getKey()));
+            params.add(businessValue(operationData, e.getKey(), valueRules));
         }
         columns.addAll(TECHNICAL_COLUMNS);
-        params.add(event.operationId());
-        params.add(event.traceId());
-        params.add(event.eventId());
-        params.add(payloadHash);
+        params.add(input.event().operationId());
+        params.add(input.workerTraceId());
+        params.add(input.event().eventId());
+        params.add(input.payloadHash());
 
-        String sql = "INSERT INTO " + target + " (" + String.join(", ", columns) + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO " + target + " (" + String.join(", ", columns) + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String preview = preview(target, columns, params);
 
         return new TranslatorResult("TRANSLATED", sql, params, preview);
     }
 
-    private Object businessValue(SyntheticPayload payload, String field) {
+    private Object businessValue(OperationData data, String field, Map<String, String> valueRules) {
         return switch (field) {
-            case "claimId" -> payload.claimId();
-            case "amount" -> payload.amount();
-            case "operationDate" -> payload.operationDate();
-            case "beneficiary" -> payload.beneficiary();
+            case "paymentId" -> data.paymentId();
+            case "claimId" -> data.claimId();
+            case "status" -> rule(valueRules, "status." + data.status(), data.status());
+            case "paymentMethod" -> rule(valueRules, "paymentMethod." + data.paymentMethod(), data.paymentMethod());
+            case "grossAmount" -> data.grossAmount();
+            case "withholdingAmount" -> data.withholdingAmount();
+            case "netAmount" -> data.netAmount();
+            case "currency" -> rule(valueRules, "currency." + data.currency(), data.currency());
             default -> throw new IllegalStateException("field_mapping key not supported: " + field);
         };
+    }
+
+    private String rule(Map<String, String> valueRules, String key, String fallback) {
+        String transformed = valueRules.get(key);
+        return transformed == null ? fallback : transformed;
     }
 
     private String preview(String target, List<String> columns, List<Object> params) {
