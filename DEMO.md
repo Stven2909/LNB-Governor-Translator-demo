@@ -1,8 +1,8 @@
 # DEMO — Prueba vertical Pagaduría Digital (LNB)
 
-Demo presentable de la PoC: `mvn test` queda en **20/20** (19 suites + 1 harness E2E de 16
-escenarios) y una corrida en vivo POSTea envelopes a `/push` devolviendo HTTP 200 con el
-estado esperado en cada caso.
+Demo presentable de la PoC: `mvn test` queda en **37/37** (24 E2E del pipeline + 4 ramas + 4
+transiciones de estado + 3 hash + 1 smoke + 1 harness E2E de 16 escenarios) y una corrida en
+vivo POSTea envelopes a `/push` devolviendo HTTP 200 con el estado esperado en cada caso.
 
 ## Reproducir la evidencia (harness E2E)
 
@@ -41,18 +41,26 @@ El resultado de la corrida en vivo también se guarda en `target/demo/demo-live-
 
 ## Snapshot congelado
 
-La evidencia de esta entrega quedó copiada en `docs/evidencia/2026-09-15/` (lea su `README.md`).
+La evidencia de esta entrega quedó copiada en `docs/evidencia/2026-09-22/` (lea su `README.md`).
+La corrida V0 sintética (histórica) está en `docs/evidencia/2026-09-15/`.
 
 ## Cómo actúa cada código de estado
 
 | Estado | Qué significa | Cómo se genera |
 |---|---|---|
-| `SUCCEEDED` | Pago persistido y ACK | Pipeline completo (caso 1) |
+| `PROCESSING` | Reserva atómica hecha, pipeline en curso | — |
+| `JDBC_COMMITTED` | INSERT confirmado a SYNTHETIC_PAYMENTS | `FixtureJdbcExecutor` → CONFIRMED |
+| `REPORT_PENDING` | JDBC confirmado, enviando reporte | Tras JDBC_COMMITTED |
+| `SUCCEEDED` | Pago persistido + reporte OK y ACK | Pipeline completo (caso 1); in-doubt conciliado por hash |
 | `IDEMPOTENT` | Duplicado idéntico, ACK | PAYLOAD_HASH + estado ya SUCCEEDED |
-| `RETRYABLE` | NACK para redelivery | Evento en vuelo (PROCESSING) |
-| `REJECTED` | No se procesa, no va a DLQ. ACK | Pre-filtro del catálogo o rechazo del Gobernador |
+| `RETRYABLE` | NACK para redelivery | Fallo JDBC temporal (sin fila), fallo de reporte (con fila) o evento en vuelo |
+| `IN_DOUBT` | Commit JDBC indeterminado | `FixtureJdbcExecutor` → UNKNOWN; redelivery concilia por hash |
+| `REJECTED` | No se procesa, no va a DLQ. ACK | Pre-filtro del catálogo, invariante monetaria o rechazo del Gobernador |
 | `DLQ_QUARANTINED` | Basura/desviación; ACK y cuarentena | Base64/JSON malformados, PK collision, alucinación del Gobernador, in-doubt inconsistente |
 | `TRANSLATION_ERROR` | El SQL inventa columnas | Guard del Traductor (solo con translator mock) |
+
+Todas las transiciones las gobierna `OperationStateMachine` (p. ej. `SUCCEEDED → PROCESSING` o
+`PROCESSING → SUCCEEDED` directos son inválidos).
 
 ## Evidencia por escenario
 

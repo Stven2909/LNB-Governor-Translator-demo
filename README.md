@@ -35,7 +35,7 @@ worker-poc/
 │   ├── AMBIENTE_DEV_LNB.md              # ambiente/seguridad del entorno DEV
 │   ├── REPORTE_EVIDENCIA_POC_LNB.md     # reporte con índices a la evidencia
 │   └── FIXTURE_SYNTHETIC_DEV.sql        # DDL sintético de las 2 tablas (DEV)
-├── docs/evidencia/                  # snapshot congelado de evidencia (ver su README)
+├── docs/evidencia/                  # snapshots congelados por fecha (2026-09-15 V0 sintética, 2026-09-22 entrega actual)
 ├── scripts/                         # demo en vivo (arranque/jar, POSTs, stop por :8080)
 │   ├── demo-live-start.ps1
 │   ├── demo-live-run.ps1
@@ -284,7 +284,8 @@ inventada); hasher → PASS (hash del contrato). Cada escenario registra su expe
 ```powershell
 mvn test
 ```
-Regenera `target/demo/` (gitignored). Snapshot congelado de la entrega en `docs/evidencia/`.
+Regenera `target/demo/` (gitignored). Snapshot congelado de la entrega en
+`docs/evidencia/2026-09-22/` (V0 sintética histórica en `docs/evidencia/2026-09-15/`).
 
 ---
 
@@ -339,5 +340,5 @@ intacto.
 - `lnb-docs/PLAN_POC_JAVA_V1.md` — plan de la PoC Java (fases, decisiones, anexos).
 - `lnb-docs/REPORTE_EVIDENCIA_POC_LNB.md` — reporte con índices a toda la evidencia.
 - `src/main/resources/catalog/CATALOG_PAYMENT_COMMITTED_V0.1.json` — whitelist real del worker.
-- `docs/evidencia/README.md` — cómo leer el snapshot congelado.
+- `docs/evidencia/2026-09-22/README.md` — cómo leer el snapshot congelado de la entrega.
 - `DEMO.md` — runbook corto de la demo.

@@ -1,11 +1,11 @@
 # CONTRACT_EVENTO_V0.1
 
-**Estado:** Borrador alineado al contrato oficial confirmado por Alex (17 sep 2026) — pendiente de cierre final (ver §8)
+**Estado:** Alineado al contrato oficial confirmado por Alex (17 sep 2026) — **paso de alineamiento aplicado en el código** (fases 1–6 del `PLAN_IMPLEMENTACION_V0.1.md`, `mvn test` 37/37 en verde). Pendiente de cierre formal por Alex y/o LNB (ver §8)
 **Versión:** CONTRACT_EVENTO_V0.1 (evoluciona a V1 tras confirmaciones de Alex)
 **Fecha:** 17 septiembre 2026
 **Responsables:** Carlos, Henry/Steven (equipo de agentes)
 **Base:** Respuesta de Alex (17 sep 2026) a la minuta de preguntas + `LNB_ER_Tecnico_PostgreSQL_DEV_102_v2.html` (ER 102 v2)
-**Relación con V0:** `CONTRACT_SYNTHETIC_V0.md` queda como prueba técnica de plataforma (fixture). Este documento define el **contrato oficial del evento** que reemplazará el vocabulario sintético en el código (paso de alineamiento pendiente).
+**Relación con V0:** `CONTRACT_SYNTHETIC_V0.md` queda como prueba técnica de plataforma (fixture). Este documento define el **contrato oficial del evento** que reemplaza el vocabulario sintético en el código (**paso de alineamiento aplicado**, ver §9).
 
 ---
 
@@ -113,7 +113,10 @@ Confirmado por Alex: operación de negocio + historial + auditoría + **idempote
 5. Idempotencia en **Sybase** (pendiente de LNB, externo a Alex).
 6. Vocabulario definitivo de estados de procesamiento.
 
-## 9. Cambios pendientes de aplicar en el PoC (paso de alineamiento)
+## 9. Cambios del paso de alineamiento (APLICADOS en el PoC)
+
+> Estado: todos los puntos ya están implementados y certificados (fases 1–6 del plan V0.1,
+> commit `3f725e8`). Evidencia de la entrega: `docs/evidencia/2026-09-22/` y `target/demo/`.
 1. `SyntheticEvent`: `contract_version` → `eventVersion`; `traceId` → `correlationId`; `entity/operation` → `aggregateType`/`aggregateId`; `eventType` → `PAYMENT_COMMITTED`; eliminar `operation`/`entity` del evento.
 2. `SyntheticPayload` → `OperationData` con los 8 campos oficiales.
 3. `StructuralValidator`: validar los 8 campos + invariante `net == gross - withholding`.
