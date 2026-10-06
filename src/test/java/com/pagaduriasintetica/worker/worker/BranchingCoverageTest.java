@@ -57,7 +57,7 @@ class BranchingCoverageTest {
         governor = mock(Governor.class);                  // Gobernador mock: nosotros decidimos su salida
         translator = mock(Translator.class);              // Traductor mock: solo se usa si el flujo lo llama
         service = new WorkerService(mapper, new PayloadHasher(), new StructuralValidator(),
-                new Catalog(mapper), governor, translator, store, jdbc, reporter);
+                new Catalog(mapper), governor, translator, store, jdbc, reporter, 3, 5);
     }
 
     ProcessingOutcome handle(PaymentCommittedEvent event) throws Exception {

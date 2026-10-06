@@ -12,7 +12,8 @@
 	<artifactId>worker-poc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>worker-poc</name>
-	<description>Prueba vertical CONTRACT_SYNTHETIC_V0 (Pagaduria Digital)</description>
+	<description>Worker de agentes LNB para la Pagaduria Digital: recibo de eventos, Gobernador
+		(Vertex AI), Translator, JDBC y reporte a la API. Contrato CATALOG_PAYMENT_COMMITTED_V0.1.</description>
 	<url/>
 	<licenses>
 		<license/>

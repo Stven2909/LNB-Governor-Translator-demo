@@ -18,7 +18,9 @@ public class OperationStateMachine {
             OperationStatus.SUCCEEDED,
             OperationStatus.REJECTED,
             OperationStatus.TRANSLATION_ERROR,
-            OperationStatus.DLQ_QUARANTINED);
+            OperationStatus.DLQ_QUARANTINED,
+            OperationStatus.BLOCKED_CONFIGURATION,
+            OperationStatus.QUARANTINE_TECHNICAL);
 
     static {
         ALLOWED.put(OperationStatus.PROCESSING, Set.of(
@@ -27,13 +29,26 @@ public class OperationStateMachine {
                 OperationStatus.RETRYABLE,
                 OperationStatus.IN_DOUBT,
                 OperationStatus.TRANSLATION_ERROR,
-                OperationStatus.DLQ_QUARANTINED));
+                OperationStatus.DLQ_QUARANTINED,
+                OperationStatus.BLOCKED_CONFIGURATION,
+                OperationStatus.QUARANTINE_TECHNICAL));
         // RETRYABLE -> REPORT_PENDING: retry de reporte cuando la fila ya existe (sin re-JDBC);
-        // -> DLQ_QUARANTINED: colisión de PK con hash distinto detectada en una redelivery.
+        // -> DLQ_QUARANTINED: colisión de PK con hash distinto detectada en una redelivery;
+        // -> BLOCKED_CONFIGURATION/QUARANTINE_TECHNICAL: el reintento falló por config o por
+        // indisponibilidad del servicio, no por el mensaje.
         ALLOWED.put(OperationStatus.RETRYABLE, Set.of(
                 OperationStatus.PROCESSING,
                 OperationStatus.REPORT_PENDING,
-                OperationStatus.DLQ_QUARANTINED));
+                OperationStatus.DLQ_QUARANTINED,
+                OperationStatus.BLOCKED_CONFIGURATION,
+                OperationStatus.QUARANTINE_TECHNICAL));
+        // Principio LNB "commit significa exito" (Carlos, revision del Bloque 1): una vez que
+        // Sybase confirma, el pago ya ocurrio. Un problema posterior del REPORTE o de la
+        // configuracion NO puede convertir la operacion entera en BLOCKED_CONFIGURATION ni en
+        // QUARANTINE_TECHNICAL: eso declararia fallida una operacion cuyo dinero ya se movio y
+        // dejaria el pago sin Registrar. Esos dos estados son alcanzables SOLO antes del commit.
+        // El fallo de reporte post-commit se registra en reportStatus=BLOCKED +
+        // manualActionRequired=true conservando status JDBC_COMMITTED / REPORT_PENDING.
         ALLOWED.put(OperationStatus.JDBC_COMMITTED, Set.of(
                 OperationStatus.REPORT_PENDING,
                 OperationStatus.SUCCEEDED,

@@ -44,13 +44,23 @@ public final class TestEnvelopeFactory {
      * el pipeline con operationId + PAYLOAD_HASH (el messageId es solo logístico).
      */
     public static String envelopeRaw(ObjectMapper mapper, String base64Data, String messageId) throws Exception {
+        return envelopeRaw(mapper, base64Data, messageId, 1);
+    }
+
+    /**
+     * Envelope con deliveryAttempt explicito. El contador de redelivery de Pub/Sub es lo que acota
+     * el ciclo de reintentos del reporte con el commit ya confirmado, asi que las pruebas de
+     * frontera necesitan poder fijarlo.
+     */
+    public static String envelopeRaw(ObjectMapper mapper, String base64Data, String messageId,
+                                     int deliveryAttempt) throws Exception {
         ObjectNode root = mapper.createObjectNode();
         root.put("subscription", SUBSCRIPTION);
         ObjectNode message = root.putObject("message");
         message.put("data", base64Data);
         message.put("messageId", messageId);
         message.put("publishTime", "2026-09-07T00:00:01Z");
-        root.put("deliveryAttempt", 1);
+        root.put("deliveryAttempt", deliveryAttempt);
         return mapper.writeValueAsString(root);
     }
 

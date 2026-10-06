@@ -10,6 +10,7 @@ import com.pagaduriasintetica.worker.contract.OperationStatus;
 import com.pagaduriasintetica.worker.contract.PaymentCommittedEvent;
 import com.pagaduriasintetica.worker.contract.ProcessingOutcome;
 import com.pagaduriasintetica.worker.contract.ReportResult;
+import com.pagaduriasintetica.worker.contract.ReportStatus;
 import com.pagaduriasintetica.worker.governor.MockGovernor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -309,7 +310,13 @@ class WorkerPipelineTest {
         ProcessingOutcome first = handle(validEvent("op-rep"));
         assertEquals(OperationStatus.RETRYABLE, first.status());
         assertFalse(first.ack());
-        assertEquals(OperationStatus.RETRYABLE, store.get("op-rep").status());
+        // Cambio intencional de semantica (revision de Carlos del Bloque 1, principio "commit
+        // significa exito"): un fallo del REPORTE ya no degrada el estado a RETRYABLE, porque eso
+        // perdia la verdad de que Sybase ya habia confirmado. El estado sigue REPORT_PENDING y el
+        // reporte queda PENDING para el proximo intento.
+        assertEquals(OperationStatus.REPORT_PENDING, store.get("op-rep").status());
+        assertEquals(ReportStatus.PENDING, store.get("op-rep").reportStatus());
+        assertFalse(store.get("op-rep").manualActionRequired(), "aun hay reintentos disponibles");
         assertEquals(1, store.paymentCount("op-rep"), "el JDBC SÍ confirmó");
 
         reporter.resetOverride();

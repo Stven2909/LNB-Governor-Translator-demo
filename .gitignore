@@ -4,6 +4,19 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Secretos: jamas al repo ###
+# .env lleva credenciales de la VM; solo se versiona .env.example.
+# Los valores reales (REPORT_API_TOKEN, SYBASE_PASSWORD) viven en Secret Manager
+# y las credenciales de Google en un archivo fuera del repositorio.
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*-key.json
+service-account*.json
+WORKER-CONFIGURACION-*.json
+
 ### STS ###
 .apt_generated
 .classpath

@@ -1,2 +1,8 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+
+# Artefactos de build: el Dockerfile usa continuacion de linea con "\" y un CRLF
+# rompe el build en un clon nuevo de Windows. Se fijan a LF.
+/Dockerfile text eol=lf
+/.dockerignore text eol=lf
+/.env.example text eol=lf

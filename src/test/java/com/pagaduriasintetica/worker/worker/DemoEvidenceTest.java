@@ -458,7 +458,7 @@ class DemoEvidenceTest {
                                     "op-xtr", "wtr-xtr", "evt-001", HASH_OP001, "xyz"),
                             inventado));
             WorkerService iso = new WorkerService(jm, new PayloadHasher(), new StructuralValidator(),
-                    cat, gov, tr, isolado, new FixtureJdbcExecutor(isolado), new MockResultReporter());
+                    cat, gov, tr, isolado, new FixtureJdbcExecutor(isolado), new MockResultReporter(), 3, 5);
 
             ProcessingOutcome o = iso.handleRaw(envelope);
             ev.put("gobernador", "APPROVED · plan válido");

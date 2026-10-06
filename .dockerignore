@@ -1,0 +1,23 @@
+# No debe entrar al contexto de build: artefactos locales, editor, docs y secretos.
+target/
+.git/
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+
+# Documentacion y evidencia: no forman parte de la imagen.
+docs/
+lnb-docs/
+scripts/
+*.md
+
+# Secretos.
+.env
+.env.*
+!.env.example
+
+# Wrapper jar (el wrapper es de tipo only-script, no lo necesita).
+.mvn/wrapper/maven-wrapper.jar
