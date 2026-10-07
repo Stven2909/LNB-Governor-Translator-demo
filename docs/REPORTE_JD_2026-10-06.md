@@ -32,19 +32,206 @@
 | **Binding de variables** | `APP_MAX_UNKNOWN_RETRIES=99` → falla arranque por `@Max(20)` | Confirmado |
 | **Demo HTTP** | 7 POSTs a `/push` | 7/7 HTTP 200 |
 
-### Desglose de las 75 pruebas
+### Desglose de las 75 pruebas (detalle por clase)
 
-| Clase | Tests | Cobertura |
-|---|---|---|
-| `WorkerPipelineTest` | 24 | Happy paths, idempotencia, in-doubt, rechazos, DLQ |
-| `CommitMeansSuccessTest` | 12 | Frontera "commit significa éxito" |
-| `GovernorFailureClassificationTest` | 8 | Clasificación G4 de errores del Governor |
-| `ConcurrentRedeliveryTest` | 7 | Lease, redelivery paralela, sin doble pago |
-| `WorkerPropertiesTest` | 11 | Validación fail-fast de configuración |
-| `BranchingCoverageTest` | 4 | Cobertura de ramas críticas |
-| `OperationStateMachineTest` | 4 | Transiciones válidas/inválidas |
-| `PayloadHasherTest` | 3 | Hash canónico del contrato |
-| `DemoEvidenceTest` | 1 | Harness E2E de 16 escenarios |
+#### 2.1 `WorkerPipelineTest` — 24 tests
+**Cobertura:** Suite E2E con contexto Spring real (`@SpringBootTest`). Pipeline completo desde la recepción del mensaje hasta la persistencia en Sybase y el reporte. Incluye los 6 casos de la prueba vertical LNB, subcasos de in-doubt, y las pruebas del plan Fase 5.
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `caso1_nuevoValidoLlegaASucceeded` | Pipeline completo: evento válido → SUCCEEDED con pago persistido, hash correcto, exactamente 1 ejecución JDBC | PROCESSING → JDBC_COMMITTED → REPORT_PENDING → SUCCEEDED | — |
+| 2 | `caso2a_duplicadoMismoHashEsIdempotent` | Reenvío idéntico (mismo hash canónico) → IDEMPOTENT, sin duplicar fila ni re-ejecutar JDBC | SUCCEEDED → IDEMPOTENT | — |
+| 3 | `caso2b_eventoEnVueloRespuestaNack` | Evento ya en PROCESSING (sin fila persistida) → NACK RETRYABLE para redelivery programada | PROCESSING → RETRYABLE | Operación en vuelo |
+| 4 | `caso2c_operationIdRecicladoConHashDiferenteEsDlq` | Mismo operationId con payload distinto → colisión de PK → ACK DLQ. El estado SUCCEEDED terminal NO se degrada | SUCCEEDED → DLQ_QUARANTINED | Colisión de PK |
+| 5 | `caso3_aggregateTypeFueraDelCatalogoEsRejected` | aggregateType fuera de whitelist → REJECTED por pre-filtro, sin reservar fila | → REJECTED (sin estado previo) | Pre-filtro del catálogo |
+| 6 | `caso3b_eventTypeFueraDelCatalogoEsRejected` | eventType != PAYMENT_COMMITTED → REJECTED por pre-filtro | → REJECTED | Pre-filtro del catálogo |
+| 7 | `caso4_alucinacionDelGobernadorEsDlq` | Gobernador devuelve tabla inventada → DLQ con razón "Governor output violated catalog whitelist" | → DLQ_QUARANTINED | Alucinación del LLM |
+| 8 | `caso5_rama1_inDoubtPromueveASucceededSinReinsertar` | In-doubt con hash idéntico → promueve a SUCCEEDED sin reinsertar ni re-ejecutar JDBC | IN_DOUBT → SUCCEEDED | Recuperación in-doubt |
+| 9 | `caso5_rama3_paymentHashMismatchEsDlq` | In-doubt con PAYLOAD_HASH distinto → DLQ por inconsistencia de BD | IN_DOUBT → DLQ_QUARANTINED | Inconsistencia de datos |
+| 10 | `caso5_rama2_retryableSinCommitReintentaFlujoCompleto` | Operación en RETRYABLE sin commit → redelivery reprocesa completo → SUCCEEDED | RETRYABLE → PROCESSING → SUCCEEDED | — |
+| 11 | `caso6_base64CorruptoEsDlq` | Base64 inválido → DLQ en el decode | → DLQ_QUARANTINED | Corrupción de encoding |
+| 12 | `caso6_jsonMalformadoEsDlq` | Base64 válido pero JSON malformado → DLQ al parsear | → DLQ_QUARANTINED | JSON inválido |
+| 13 | `caso6_faltanOperationIdYPayloadEsDlq` | Faltan operationId y operationData → DLQ estructural | → DLQ_QUARANTINED | Schema incompleto |
+| 14 | `eventVersionInvalidaEsDlqEstructural` | eventVersion=2 (inválida) → DLQ estructural | → DLQ_QUARANTINED | Versión incorrecta |
+| 15 | `destinationSystemDistintoDeSybaseEsDlq` | destinationSystem="ORACLE" → DLQ estructural | → DLQ_QUARANTINED | Ruteo equivocado |
+| 16 | `campoObligatorioAusenteEnOperationDataEsDlq` | paymentId=null → DLQ estructural | → DLQ_QUARANTINED | Campo obligatorio ausente |
+| 17 | `montosNegativosEsDlq` | Montos negativos → DLQ estructural | → DLQ_QUARANTINED | Validación de montos |
+| 18 | `invarianteMonetariaVioladaEsRejected` | netAmount != gross - withholding → REJECTED (validationRules) | → REJECTED | Invariante monetaria |
+| 19 | `duplicadoEnJdbcCommittedSoloReintentaReporte` | Duplicado en JDBC_COMMITTED → reintenta SOLO el reporte, sin re-ejecutar JDBC | JDBC_COMMITTED → SUCCEEDED | — |
+| 20 | `jdbcUnknowngeneraInDoubtYSeConcilia` | JDBC UNKNOWN → IN_DOUBT + NACK; redelivery concilia a SUCCEEDED sin re-ejecutar JDBC | PROCESSING → IN_DOUBT → SUCCEEDED | JDBC UNKNOWN |
+| 21 | `falloTemporalDelReporteRecuperaSinReejecutarJdbc` | Fallo del reporte → REPORT_PENDING (no RETRYABLE); redelivery reintenta solo reporte → SUCCEEDED | JDBC_COMMITTED → REPORT_PENDING → SUCCEEDED | Fallo temporal del endpoint |
+| 22 | `reporteConflict409NoReejecutaJdbc` | 409 CONFLICT del endpoint → promueve a SUCCEEDED sin re-ejecutar JDBC | REPORT_PENDING → SUCCEEDED | Conflicto 409 |
+| 23 | `redeliveryTrasSucceededNoReejecutaJdbc` | Redelivery tras SUCCEEDED → IDEMPOTENT, sin segunda ejecución JDBC | SUCCEEDED → IDEMPOTENT | — |
+| 24 | `traductorRealEmiteDoceParametros` | El Traductor real emite exactamente 12 parámetros (8 negocio + 4 trazabilidad) | → SUCCEEDED | — |
+
+**Helpers:** `TestEnvelopeFactory`, `InMemoryStateStore` (reset por test), `MockGovernor` (override alucinación), `MockResultReporter` (override fallos/409), `FixtureJdbcExecutor` (outcome forzable), `jdbcBaseline`/`jdbcDelta()` para medir ejecuciones JDBC.
+
+---
+
+#### 2.2 `CommitMeansSuccessTest` — 12 tests
+**Cobertura:** Frontera del Bloque 1 (revisión de Carlos). Principio "commit significa éxito": un fallo del reporte con Sybase ya confirmado NO puede cuarentenar la operación. Límites de reintento, distinción cuarentena funcional vs DLQ nativa, prohibición de cuarentena técnica tras el commit. Suite sin `@SpringBootTest` (mocks).
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `falloDelReporteConservaElCommitYNoQuarantina` | Fallo del reporte con commit confirmado → REPORT_PENDING, sin cuarentena, sin degradar a RETRYABLE | JDBC_COMMITTED → REPORT_PENDING | Fallo del endpoint de reporte |
+| 2 | `redeliveryTrasFalloDeReporteReintentaSoloElReporte` | Redelivery tras fallo de reporte → reintenta SOLO el reporte, sin re-ejecutar JDBC | REPORT_PENDING → SUCCEEDED | Recuperación tras fallo |
+| 3 | `reintentosDeReporteAgotadosBloqueanElReporteSinQuarantinar` | Al agotar reintentos del reporte → ReportStatus.BLOCKED + manualActionRequired, sin cuarentena técnica | REPORT_PENDING (bloqueado) | Reintentos agotados |
+| 4 | `errorDesconocidoTrasCommitBloqueaElReporteYPreservaElPago` | Excepción no prevista tras commit → reporte bloqueado, pago preservado, sin cuarentena | REPORT_PENDING (bloqueado) | Bug en cliente de reporte |
+| 5 | `errorDesconocidoAntesDelCommitAgotaIntentosYVaACuarentenaTecnica` | Error desconocido ANTES del commit → reintento limitado (3 intentos) → cuarentena TÉCNICA | PROCESSING → RETRYABLE → QUARANTINE_TECHNICAL | Bug antes del commit |
+| 6 | `errorDesconocidoAntesDelCommitReintentaMientrasQuedenIntentos` | Error desconocido antes del commit con intentos disponibles → RETRYABLE + NACK | PROCESSING → RETRYABLE | Reintento transitorio |
+| 7 | `laMaquinaDeEstadosProhibeCuarentenaTrasElCommit` | La máquina PROHÍBE transiciones a QUARANTINE_TECHNICAL o BLOCKED_CONFIGURATION desde JDBC_COMMITTED o REPORT_PENDING | — (test de máquina) | Transiciones ilegales |
+| 8 | `marcarReporteBloqueadoExigeQueElCommitEsteConfirmado` | No se puede marcar reporte como bloqueado si no hubo commit (estado PROCESSING) | — (test de invariante) | Operación sin commit |
+| 9 | `siFallaElRegistroDelEstadoNoSeRespondeConAck` | Si falla el registro del estado → se propaga excepción (NO se puede responder 200/ACK) | — (test de propagación) | Fallo de BD al persistir |
+| 10 | `laInvarianteMonetariaEsRechazoDeNegocioNoCuarentena` | Invariante monetaria violada → REJECTED (no es cuarentena) | → REJECTED | Rechazo de negocio |
+| 11 | `laCuarentinaFuncionalDelGovernorQuedaTipada` | GovernorInvalidResponseException → DLQ_QUARANTINED con QuarantineType.FUNCTIONAL | → DLQ_QUARANTINED (funcional) | Respuesta fuera de whitelist |
+| 12 | `timeoutDelGovernorAntesDelJdbcNoDejaPagoNiReservaAtascada` | Timeout del Governor → RETRYABLE + NACK, sin JDBC, sin estado terminal | PROCESSING → RETRYABLE | Timeout de Vertex |
+
+**Helpers:** `BranchingCoverageTestSupport`, `Mockito.mock(Governor/Translator)`, `InMemoryStateStore`, `FixtureJdbcExecutor`, `MockResultReporter`, constantes `MAX_UNKNOWN_RETRIES=3`/`MAX_REPORT_ATTEMPTS=5`, `handle(operationId, deliveryAttempt)`.
+
+---
+
+#### 2.3 `GovernorFailureClassificationTest` — 8 tests
+**Cobertura:** Clasificación de fallos del Governor (G4, revisión de Carlos). Cada tipo de excepción se clasifica correctamente: timeout/5xx → RETRYABLE, respuesta inválida → cuarentena funcional, config/permisos → BLOCKED_CONFIGURATION, excepción no prevista → RETRYABLE. Suite sin `@SpringBootTest` (Mockito puro).
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `vertexNoDisponibleQuedaRetryableYConNack` | GovernorUnavailableException → RETRYABLE + NACK, sin JDBC, sin PROCESSING huérfano | PROCESSING → RETRYABLE | Timeout/5xx de Vertex |
+| 2 | `retryablePorVertexEsReclamableEnLaRedelivery` | Reserva en RETRYABLE es reclamable: redelivery vuelve a PROCESSING con bump de intento | RETRYABLE → PROCESSING → SUCCEEDED | Recuperación tras timeout |
+| 3 | `respuestaInvalidaVaACuarentenaFuncionalConAck` | GovernorInvalidResponseException → DLQ_QUARANTINED + ACK, sin reintentos | → DLQ_QUARANTINED | Respuesta no parseable |
+| 4 | `errorDeConfiguracionQuedaBlockedConfiguration` | GovernorConfigurationException → BLOCKED_CONFIGURATION + ACK, sin loop | → BLOCKED_CONFIGURATION | Credencial/permiso denegado |
+| 5 | `redeliveryDeBlockedConfigurationConfirmaConAck` | Redelivery de BLOCKED_CONFIGURATION → ACK (es terminal, no se reabre) | BLOCKED_CONFIGURATION → BLOCKED_CONFIGURATION | Estado terminal |
+| 6 | `excepcionNoPrevistaNoDejaReservaEnProcessing` | IllegalStateException del Governor → RETRYABLE, nunca PROCESSING huérfano | PROCESSING → RETRYABLE | Excepción no prevista |
+| 7 | `excepcionNoPrevistaEnElTraductorTampocoDeJaProcessing` | Excepción no prevista en el Traductor → RETRYABLE, sin JDBC | PROCESSING → RETRYABLE | Bug en traductor |
+| 8 | `elMotivoPersistidoDistingueClasificacionDeExcepcionNoPrevista` | El errorReason persistido contiene el detalle interno para diagnóstico | — (trazabilidad) | Diagnóstico operativo |
+
+**Helpers:** `Mockito.mock(Governor/Translator)`, `BranchingCoverageTestSupport`, `InMemoryStateStore`, `FixtureJdbcExecutor`, `MockResultReporter`.
+
+---
+
+#### 2.4 `ConcurrentRedeliveryTest` — 7 tests
+**Cobertura:** Idempotencia y exclusión bajo concurrencia (Bloque 2). Con N entregas simultáneas del mismo operationId, el JDBC se ejecuta una sola vez y la fila no se duplica. Mecanismo de lease con expiración para recuperar operaciones abandonadas. Suite con `@SpringBootTest`.
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `entregasSimultaneasDelMismoOperationIdEjecutanJdbcUnaSolaVez` | 16 hilos entregan el mismo operationId → JDBC se ejecuta 1 vez, fila no se duplica, intento=1 | → SUCCEEDED (concurrente) | Concurrencia de entregas |
+| 2 | `soloUnHiloReclamaUnIntentoAbandonado` | N markedProcessing sobre mismo PROCESSING (lease vencido) → solo 1 gana, intento=2 | PROCESSING → PROCESSING (reclamo) | Actualización perdida |
+| 3 | `unEstadoTerminalNoSeDegradaPorEscrituraConcurrente` | Escritura concurrente sobre estado SUCCEEDED → falla explícitamente, no degrada | SUCCEEDED (invariante) | Escritura atrasada |
+| 4 | `conLeaseVigenteLaOperacionEnVueloNoSeRoba` | Con lease vigente → NACK RETRYABLE, no se roba el trabajo, intento no se infla | PROCESSING → RETRYABLE | Operación en vuelo |
+| 5 | `elLeaseSeLiberaAlTerminarLaOperacion` | Al terminar la operación → lease se libera (leaseExpiry=null) | → SUCCEEDED (sin lease) | — |
+| 6 | `conLeaseVencidoLaOperacionSeReclamaYSeReintenta` | Lease vencido (MutableClock) → se reclama y ejecuta flujo completo en mismo intento | PROCESSING → SUCCEEDED | Recuperación tras crash |
+| 7 | `operacionesDistintasEnParaleloNoSeInterfieren` | 12 operaciones independientes en paralelo → cada una ejecuta su JDBC, sin interferencia | → SUCCEEDED (12 veces) | Aislamiento entre operaciones |
+
+**Helpers:** `MutableClock` (reloj mutable para expiración de lease), `runInParallel`/`inParallel` (CountDownLatch), `reserveProcessing`, `jdbcBaseline`/`jdbcDelta()`.
+
+---
+
+#### 2.5 `WorkerPropertiesTest` — 11 tests
+**Cobertura:** Validación de configuración de despliegue (`WorkerProperties`). Configuración tipada, validada al arrancar (fail-fast), libre de secretos, valores por defecto que permitan perfil mock ejecutable. Tests puros de unidad.
+
+| # | Método | Qué verifica | Escenario de error/borde |
+|---|---|---|---|
+| 1 | `losValoresPorDefectoDejanElPerfilMockEjecutable` | Defaults: governor=MOCK, store=MEMORY, reporter=MOCK, ingest=PUSH, region=us-central1, timeout=30s | — |
+| 2 | `vertexSinProjectIdFallaAlArrancar` | Vertex sin project-id → IllegalStateException "app.vertex.project-id" | Fail-fast en arranque |
+| 3 | `reporteHttpSinBaseUrlFallaAlArrancar` | Reporter HTTP sin base-url → IllegalStateException "app.report.base-url" | Fail-fast en arranque |
+| 4 | `jdbcSinUrlFallaAlArrancar` | Store JDBC sin URL → IllegalStateException | Fail-fast en arranque |
+| 5 | `pullSinSuscripcionFallaAlArrancar` | Ingest PULL sin subscriptionId → IllegalStateException | Fail-fast en arranque |
+| 6 | `laClaveDeIdempotenciaEsEstableYSeparadaDelIntento` | Header idempotencia = "Idempotency-Key", token env var = "REPORT_API_TOKEN" | — |
+| 7 | `elRetryDeJdbcDesconocidoEstaProhibidoPorDefecto` | retryOnUnknown=false por defecto (UNKNOWN → IN_DOUBT, nunca re-ejecutar) | — |
+| 8 | `noSeAlmacenanSecretosSoloReferencias` | toString() no expone usuario de BD, solo flags "configured=true" | Exposición de secretos |
+| 9 | `losTimeoutsSonDuracionesTipadas` | Timeouts son Duration (no cadenas): report=3s, jdbc=15s, pubsub ackDeadline=60s | Tipos fuertes |
+| 10 | `laPropiedadEstaAnotadaParaBindingYValidacion` | @ConfigurationProperties(prefix="app") + @Validated presentes | — |
+| 11 | `losSubObjetosNoSonNulosEnElBindingPorDefecto` | Sub-objetos (vertex, jdbc, pubsub) tienen valores no nulos tras binding | — |
+
+**Helpers:** Sin fixtures externos. Usa `new WorkerProperties()` directamente.
+
+---
+
+#### 2.6 `BranchingCoverageTest` — 4 tests
+**Cobertura:** Ramas de decisión de LNB verificadas por comportamiento (Mockito puro, sin ApplicationContext). Pre-filtro del catálogo, invariante monetaria, rechazo del Gobernador por regla de negocio, TRANSLATION_ERROR.
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `caso3_prefiltroRechazaSinInvocarGobernadorNiTraductorNiReservar` | aggregateType fuera de catálogo → REJECTED, sin invocar Governor/Traductor, sin reservar | → REJECTED (sin fila) | Pre-filtro del catálogo |
+| 2 | `invarianteMonetariaVioladaRejectedAntesDelGobernador` | Invariante monetaria violada → REJECTED, sin invocar Governor (regla determinista) | → REJECTED | Validación de negocio |
+| 3 | `caso9_gobernadorRechazaPorReglaDeNegocio` | Governor rechaza por regla de negocio → REJECTED (no es violación de contrato) | → REJECTED | Rechazo de negocio |
+| 4 | `caso_translatorDevuelveColumnaInventadaEsTranslationError` | Traductor devuelve columna inventada → TRANSLATION_ERROR, sin JDBC | → TRANSLATION_ERROR | Columna fuera de whitelist |
+
+**Helpers:** `whenGovernorRejects()`, `whenGovernorApproves(operationId)`, `Mockito.mock(Governor/Translator)`, `InMemoryStateStore`, `FixtureJdbcExecutor`, `MockResultReporter`.
+
+---
+
+#### 2.7 `OperationStateMachineTest` — 4 tests
+**Cobertura:** Política de transiciones de la máquina de estados. Transiciones válidas permitidas, saltos inválidos rechazados. Tests puros de unidad.
+
+| # | Método | Qué verifica | Escenario de error/borde |
+|---|---|---|---|
+| 1 | `permiteTransicionesValidasDeProcessing` | PROCESSING → JDBC_COMMITTED, REJECTED, RETRYABLE, IN_DOUBT son válidas | Transiciones válidas |
+| 2 | `permiteRedeliveryDesdeJdbcCommittedHaciaReporte` | JDBC_COMMITTED → REPORT_PENDING, REPORT_PENDING → RETRYABLE/SUCCEEDED, IN_DOUBT → SUCCEEDED son válidas | Transiciones válidas |
+| 3 | `rechazaTransicionDesdeTerminal` | SUCCEEDED → PROCESSING, REJECTED → PROCESSING, DLQ_QUARANTINED → SUCCEEDED lanzan IllegalStateException | Transiciones ilegales |
+| 4 | `rechazaSaltoNoPermitidoEnProcesamiento` | PROCESSING → SUCCEEDED lanza IllegalStateException (salto no permitido) | Transición ilegal |
+
+**Helpers:** Sin fixtures. Usa `new OperationStateMachine()` directamente.
+
+---
+
+#### 2.8 `PayloadHasherTest` — 3 tests
+**Cobertura:** Hash canónico del payload del contrato. Hash coincide con el ejemplo del contrato, montos normalizados a 2 decimales, equivalencia decimal. Tests puros de unidad.
+
+| # | Método | Qué verifica | Escenario de error/borde |
+|---|---|---|---|
+| 1 | `canonicalHashMatchesContractExample` | Hash del fixture válido coincide con HASH_OP001 del contrato | — |
+| 2 | `amountIsNormalizedToTwoDecimals` | Montos enteros (200, 50, 150) producen el mismo hash que con decimales (200.00, 50.00, 150.00) | Normalización de montos |
+| 3 | `decimalEquivalence` | BigDecimal("1.10") y BigDecimal("1.1") producen el mismo hash | Equivalencia decimal |
+
+**Helpers:** `TestEnvelopeFactory.HASH_OP001`, `TestEnvelopeFactory.validData()`, `new PayloadHasher()`.
+
+---
+
+#### 2.9 `DemoEvidenceTest` — 1 test (orquestador de 16 escenarios)
+**Cobertura:** Harness E2E de demo. Corre la matriz completa de 16 escenarios de la prueba vertical LNB contra el pipeline real (contexto Spring) y exporta la evidencia a `target/demo/` vía `EvidenceWriter`. Cada escenario registra un "expediente" (Map).
+
+| # | Método | Qué verifica | Estados | Escenario de error/borde |
+|---|---|---|---|---|
+| 1 | `matrizCompletaDeEvidencia` | Ejecuta los 16 escenarios y verifica que todos pasen (PASS). Es el único @Test; los demás son métodos privados invocados desde aquí. | — (orquestador) | — |
+
+**Escenarios privados invocados desde `matrizCompletaDeEvidencia`:**
+
+| # | Método | Escenario | Estado esperado |
+|---|---|---|---|
+| 1 | `caso1_nuevoValido` | Pipeline completo → SUCCEEDED | SUCCEEDED |
+| 2 | `caso2a_duplicadoIdempotente` | Reenvío idéntico → IDEMPOTENT | IDEMPOTENT |
+| 3 | `caso2b_inFlightRetryable` | Evento en vuelo → RETRYABLE (NACK) | RETRYABLE |
+| 4 | `caso2c_pkCollisionDlq` | Mismo operationId con otra carga → DLQ | DLQ_QUARANTINED |
+| 5 | `caso3_prefiltroRejected` | aggregateType no autorizado → REJECTED | REJECTED |
+| 6 | `caso3b_eventTypeNoPermitido` | eventType fuera de catálogo → REJECTED | REJECTED |
+| 7 | `caso4_governorAlucinaDlq` | Gobernador inventa tabla → DLQ | DLQ_QUARANTINED |
+| 8 | `caso5r1_inDoubtRecuperado` | In-doubt con hash igual → SUCCEEDED | SUCCEEDED |
+| 9 | `caso5r2_retryReprocesado` | RETRYABLE reprocesado → SUCCEEDED | SUCCEEDED |
+| 10 | `caso5r3_inDoubtHashDistintoDlq` | In-doubt con hash distinto → DLQ | DLQ_QUARANTINED |
+| 11 | `caso6_base64CorruptoDlq` | Base64 inválido → DLQ | DLQ_QUARANTINED |
+| 12 | `caso6_jsonMalformadoDlq` | JSON malformado → DLQ | DLQ_QUARANTINED |
+| 13 | `caso6_faltanCamposDlq` | Faltan operationId/operationData → DLQ | DLQ_QUARANTINED |
+| 14 | `paso9_governorRechazado` | Gobernador rechaza por regla de negocio → REJECTED | REJECTED |
+| 15 | `translation_errorColumnaInventada` | Traductor inventa columna → TRANSLATION_ERROR | TRANSLATION_ERROR |
+| 16 | `hasher_contrato` | Verificación pura del PAYLOAD_HASH canónico | PASS |
+
+**Helpers:** `escenario(id, titulo, casoRef, esperado, ackEsperado, liveSafe, liveName)`, `finalizar(ev, outcome, esperado, ackEsperado)`, `fallo(ev, exception)`, `snapshot(ev, store, operationId)`, `estadoFila(OperationState)`, `evento(PaymentCommittedEvent)`, `plan(PaymentCommittedEvent)`, `valueRulesObject(cat, aggregateType)`, `EvidenceWriter.escribir(EVIDENCIAS)`, `EVIDENCIAS` (lista estática compartida), `TestEnvelopeFactory`, `MockGovernor` (override alucinación/rechazo), `MockResultReporter`, `FixtureJdbcExecutor`, `InMemoryStateStore`.
+
+---
+
+### Patrones comunes entre suites
+
+| Patrón | Archivos que lo usan |
+|---|---|
+| `@SpringBootTest` (contexto real) | WorkerPipelineTest, ConcurrentRedeliveryTest, DemoEvidenceTest |
+| Mockito puro (sin contexto) | CommitMeansSuccessTest, GovernorFailureClassificationTest, BranchingCoverageTest |
+| Tests puros de unidad | WorkerPropertiesTest, OperationStateMachineTest, PayloadHasherTest |
+| `FixtureJdbcExecutor` con `jdbcDelta()` | WorkerPipelineTest, ConcurrentRedeliveryTest |
+| `MockGovernor` con override | WorkerPipelineTest, DemoEvidenceTest |
+| `MockResultReporter` con override | WorkerPipelineTest, ConcurrentRedeliveryTest, DemoEvidenceTest |
+| `BranchingCoverageTestSupport` (stubs) | CommitMeansSuccessTest, GovernorFailureClassificationTest |
+| `TestEnvelopeFactory` | WorkerPipelineTest, BranchingCoverageTest, PayloadHasherTest, DemoEvidenceTest |
+| `OperationStateMachine` directo | CommitMeansSuccessTest, GovernorFailureClassificationTest, BranchingCoverageTest, OperationStateMachineTest, ConcurrentRedeliveryTest, DemoEvidenceTest |
 
 ### Los 16 escenarios del harness
 
