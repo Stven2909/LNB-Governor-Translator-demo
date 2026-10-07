@@ -9,11 +9,12 @@
 
 | Responsable | Frente | Estado actual | Pendiente | Fecha entrega |
 |---|---|---|---|---|
-| **Carlos** | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK Vertex en `pom.xml`, prompt estructurado, validación anti-alucinación | 16/10 (review técnica) |
-| **Steven** | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox | 19/10 (ensayo integral) |
-| **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, logs en Cloud Logging, plantillas de despliegue | Evidencia de monitoreo en DEV, dashboard de estado | 14/10 |
-| **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push + `--invoker`, VPN Cloud Run→Sybase, credenciales Secret Manager | 14-15/10 |
+| **Carlos** (E3.1) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | 16/10 (review técnica) |
+| **Steven** (E3.2–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 19/10 (ensayo integral) |
+| **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado | 14/10 |
+| **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push autenticada mediante OIDC e IAM, VPN Cloud Run→Sybase, credenciales Secret Manager | 14-15/10 |
 | **Alex** | PostgreSQL/Sybase, driver jConnect, DDL, credenciales | VM `poc-connect-sybase` verificada (conectividad TCP a `192.168.2.14:5000`) | Driver jConnect (procedencia/licencia), credenciales BD, tablas Sybase DEV | Pendiente confirmación |
+| **Outbox Publisher** | Publicador Outbox → Pub/Sub | No existe | **Responsable por confirmar con JD/API; propuesta: Steven** | Pendiente confirmación |
 
 ---
 
@@ -23,16 +24,16 @@
 
 | Componente | Evidencia | Resultado |
 |---|---|---|
-| **Suite de pruebas** | `mvn -B test` | **75/75 tests en verde** (9 clases) |
-| **Harness E2E** | `DemoEvidenceTest` — 16 escenarios | **16/16 PASS** |
-| **Hash canónico** | SHA-256 del payload de referencia | `0fd5240accd7b41a9d55d95567eb79b0f8f87a9776c0396a5f888d9c7a99c246a8` — intacto |
-| **Imagen Docker** | `docker build -t worker-poc:dev .` | Build exitoso, 486 KB |
+| **Suite de pruebas** | `mvn -B test` (ejecutado 6/10, commit `95a73e0`) | **75/75 tests en verde** (10 clases) |
+| **Harness local del pipeline** | `DemoEvidenceTest` — 16 escenarios con mocks/fixtures | **16/16 PASS** |
+| **Hash canónico** | SHA-256 del payload de referencia | `0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8` — **CORREGIDO** (tenía 66 chars, ahora 64) |
+| **Imagen Docker** | `docker build -t worker-poc:dev .` | Build exitoso — tamaño pendiente de verificar con `docker image inspect` |
 | **Health en contenedor** | `docker run` + `curl /actuator/health/readiness` | `{"status":"UP"}` |
 | **Usuario no-root** | `docker exec worker-test id` | `uid=1001(lnb)` |
 | **Binding de variables** | `APP_MAX_UNKNOWN_RETRIES=99` → falla arranque por `@Max(20)` | Confirmado |
-| **Demo HTTP** | 7 POSTs a `/push` | 7/7 HTTP 200 |
+| **Demo HTTP local** | 7 POSTs a `/push` | 7/7 HTTP 200 — **HTTP 200 demuestra ACK, no necesariamente pago exitoso** |
 
-### Desglose de las 75 pruebas (detalle por clase)
+### Desglose de las 75 pruebas (detalle por clase — 10 clases)
 
 #### 2.1 `WorkerPipelineTest` — 24 tests
 **Cobertura:** Suite E2E con contexto Spring real (`@SpringBootTest`). Pipeline completo desde la recepción del mensaje hasta la persistencia en Sybase y el reporte. Incluye los 6 casos de la prueba vertical LNB, subcasos de in-doubt, y las pruebas del plan Fase 5.
@@ -188,7 +189,7 @@
 ---
 
 #### 2.9 `DemoEvidenceTest` — 1 test (orquestador de 16 escenarios)
-**Cobertura:** Harness E2E de demo. Corre la matriz completa de 16 escenarios de la prueba vertical LNB contra el pipeline real (contexto Spring) y exporta la evidencia a `target/demo/` vía `EvidenceWriter`. Cada escenario registra un "expediente" (Map).
+**Cobertura:** Harness local del pipeline (con mocks/fixtures). Corre la matriz completa de 16 escenarios de la prueba vertical LNB contra el pipeline real (contexto Spring) y exporta la evidencia a `target/demo/` vía `EvidenceWriter`. Cada escenario registra un "expediente" (Map).
 
 | # | Método | Qué verifica | Estados | Escenario de error/borde |
 |---|---|---|---|---|
@@ -216,6 +217,17 @@
 | 16 | `hasher_contrato` | Verificación pura del PAYLOAD_HASH canónico | PASS |
 
 **Helpers:** `escenario(id, titulo, casoRef, esperado, ackEsperado, liveSafe, liveName)`, `finalizar(ev, outcome, esperado, ackEsperado)`, `fallo(ev, exception)`, `snapshot(ev, store, operationId)`, `estadoFila(OperationState)`, `evento(PaymentCommittedEvent)`, `plan(PaymentCommittedEvent)`, `valueRulesObject(cat, aggregateType)`, `EvidenceWriter.escribir(EVIDENCIAS)`, `EVIDENCIAS` (lista estática compartida), `TestEnvelopeFactory`, `MockGovernor` (override alucinación/rechazo), `MockResultReporter`, `FixtureJdbcExecutor`, `InMemoryStateStore`.
+
+---
+
+#### 2.10 `WorkerPocApplicationTests` — 1 test
+**Cobertura:** Smoke de contexto — verifica que el grafo de beans completo del modular monolith arranca sin errores.
+
+| # | Método | Qué verifica | Escenario de error/borde |
+|---|---|---|---|
+| 1 | `contextLoads()` | El contexto Spring completo (todos los beans: `PushController`, `WorkerService`, `MockGovernor`, `DeterministicTranslator`, `InMemoryStateStore`, `FixtureJdbcExecutor`, `MockResultReporter`, `OperationStateMachine`) arranca sin excepciones | Fallo de wiring o dependencia faltante |
+
+**Helpers:** Sin fixtures. Usa `@SpringBootTest` directamente.
 
 ---
 
@@ -258,8 +270,8 @@
 
 | Componente | Estado | Por qué no está probado |
 |---|---|---|
-| Vertex AI (Gobernador real) | Mock | Falta SDK + prompt de Carlos |
-| Pub/Sub real (push) | HTTP simulado | Falta suscripción + `--invoker` de JD |
+| Vertex AI (Gobernador real) | Mock | Falta SDK `com.google.genai:google-genai` + prompt de Carlos |
+| Pub/Sub real (push) | HTTP simulado | Falta suscripción push autenticada mediante OIDC e IAM (JD) |
 | JDBC → Sybase | Fixture | Falta driver jConnect + VPN + credenciales |
 | Reporte HTTP a la API | Mock | Falta endpoint real + contrato 409 |
 | Almacenamiento durable | InMemory | Falta JDBC real (idempotencia entre instancias) |
@@ -295,7 +307,8 @@
 | `APP_VERTEX_MODEL` | `gemini-2.5-flash` | Modelo LLM |
 | `APP_REPORT_BASE_URL` | — | Obligatorio si `REPORTER=HTTP` |
 | `APP_JDBC_URL` | — | Obligatorio si `STORE=JDBC` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | — | Ruta al JSON de service account |
+
+> **Nota:** En Cloud Run, el servicio usa la **cuenta asignada y credenciales automáticas (ADC)**. No se requiere `GOOGLE_APPLICATION_CREDENTIALS` en runtime. El acceso humano a metadata de Secret Manager no demuestra ni descarta que la cuenta de ejecución pueda leer un secreto — hay que verificar ambos permisos por separado.
 
 ### Accesos necesarios
 
@@ -305,15 +318,15 @@
 | Cloud Run (ejecución) | `sa-run-agentes-dev-lnb@…` | Cloud Run Invoker + Pub/Sub Subscriber + Vertex AI User | ✅ Habilitado |
 | Pub/Sub | `sa-run-agentes-dev-lnb@…` | Pub/Sub Publisher + Subscriber | ✅ Habilitado |
 | Vertex AI | `sa-run-agentes-dev-lnb@…` | Vertex AI User | ✅ Habilitado |
-| Secret Manager | `sa-run-agentes-dev-lnb@…` | Secret Manager Secret Accessor | ⏳ Pendiente (solo metadata visible) |
-| Cloud Run push (OIDC) | `sa-run-agentes-dev-lnb@…` | `roles/run.invoker` sobre el servicio | ⏳ Pendiente (JD habilita) |
+| Secret Manager | `sa-run-agentes-dev-lnb@…` | Secret Manager Secret Accessor | ⏳ Pendiente — verificar que la SA de ejecución pueda leer el secreto (no solo metadata) |
+| Cloud Run push (OIDC) | `--push-auth-service-account` (cuenta que autentica el push, puede ser distinta de la SA de ejecución) | `roles/run.invoker` sobre el servicio Cloud Run | ⏳ Pendiente — JD debe identificar la cuenta configurada en `--push-auth-service-account` y concederle `run.invoker`; además verificar que Pub/Sub pueda generar el token OIDC |
 
 ### Secretos (Secret Manager)
 
-| Nombre | Uso | Estado |
-|---|---|---|
-| `REPORT_API_TOKEN` | Token para el endpoint de reporte | ⏳ Pendiente (valor en Secret Manager) |
-| `SYBASE_PASSWORD` | Contraseña de Sybase | ⏳ Pendiente (valor en Secret Manager) |
+| Nombre del secreto | Versión | Variable de entorno (donde se inyectará) | Uso | Estado |
+|---|---|---|---|---|
+| `REPORT_API_TOKEN` (por confirmar) | `latest` (por confirmar) | `REPORT_API_TOKEN` | Token para el endpoint de reporte | ⏳ Pendiente — JD/Alex deben confirmar nombre del secreto, versión, y variable de inyección |
+| `SYBASE_PASSWORD` (por confirmar) | `latest` (por confirmar) | `SYBASE_PASSWORD` | Contraseña de Sybase | ⏳ Pendiente — JD/Alex deben confirmar nombre del secreto, versión, y variable de inyección |
 
 ---
 
@@ -334,23 +347,43 @@
 |---|---|---|---|---|
 | 1 | Driver jConnect (procedencia/licencia/checksum) | Alex | ❌ Pendiente | **ALTO** — sin driver no hay JDBC |
 | 2 | Credenciales Secret Manager (valores) | Alex/JD | ⏳ Pendiente | **ALTO** — sin credenciales no hay conexión |
-| 3 | Suscripción Pub/Sub push + `--invoker` | JD | ⏳ Pendiente | **MEDIO** — bloquea E3.3 pero no E3.4 |
+| 3 | Suscripción Pub/Sub push autenticada mediante OIDC e IAM | JD | ⏳ Pendiente | **MEDIO** — bloquea E3.3 pero no E3.4 |
 | 4 | VPN Cloud Run → Sybase | JD | ⏳ Pendiente | **ALTO** — sin VPN no hay conectividad |
 | 5 | SDK Vertex + prompt | Carlos | ⏳ Pendiente | **MEDIO** — bloquea E3.2 pero no E3.4 |
 | 6 | Contrato 409 del reporte | Alex | ⏳ Pendiente | **BAJO** — no bloquea la prueba de Sybase |
-| 7 | Publicador Outbox → Pub/Sub | Steven (propuesta) | ⏳ Pendiente | **MEDIO** — bloquea la cadena completa |
+| 7 | Publicador Outbox → Pub/Sub | **Por confirmar con JD/API; propuesta: Steven** | ⏳ Pendiente | **MEDIO** — bloquea la cadena completa |
 
 ### Criterio Go/No-Go (16 de octubre)
 
-**Se mantiene el 20/10 si:**
+**Se mantiene el 20/10 si TODOS los siguientes gates están verdes:**
 - [ ] Driver jConnect recibido y validado por Alex
-- [ ] Credenciales Secret Manager operativas
+- [ ] Credenciales Secret Manager operativas (valores, no solo metadata)
 - [ ] VPN Cloud Run → Sybase verificada
-- [ ] SDK Vertex + prompt funcionales (Carlos)
-- [ ] Suscripción Pub/Sub push configurada (JD)
+- [ ] SDK Vertex (`com.google.genai:google-genai`) + prompt funcionales (Carlos)
+- [ ] Suscripción Pub/Sub push autenticada mediante OIDC e IAM (JD)
+- [ ] Publicador Outbox con responsable confirmado y publicación de eventos confirmados en PostgreSQL
+- [ ] Worker desplegado en Cloud Run con push autenticado y políticas de reintentos/DLQ verificadas
+- [ ] Gobernador real probado con modelo disponible (⚠️ `gemini-2.5-flash` retira 20/10 — confirmar modelo alternativo)
+- [ ] JDBC, tablas autorizadas e idempotencia en Sybase
+- [ ] Almacenamiento durable del worker, probado ante reinicio y múltiples instancias
+- [ ] Endpoint de reporte operativo, autenticación y contrato acordados
+- [ ] Evidencia del resultado final registrado por la API
 
-**Se mueve al 27/10 si:**
-- Cualquiera de los 3 primeros gates (driver, credenciales, VPN) no está listo
+**Se mueve al 27/10 (alternativa condicionada, no automática) si:**
+- Cualquiera de los 3 primeros gates (driver, credenciales, VPN) no está listo, O
+- El Go/No-Go del 16/10 detecta bloqueos en los demás gates
+
+---
+
+## 5. Gaps técnicos identificados (revisión de Carlos)
+
+| # | Gap | Archivo | Criterio de aceptación |
+|---|---|---|---|
+| 1 | Validación de eventos incompleta: solo verifica presencia (blank), no valores | `StructuralValidator.java` | Rechazar `status != COMMITTED`, `payment_method` fuera de whitelist, `currency` fuera de whitelist |
+| 2 | Colisión de hash post-commit: mismo operationId con otro hash cuando origen está `JDBC_COMMITTED`/`REPORT_PENDING` puede degradar la operación | `OperationStateMachine.java` | Bloquear transición a `DLQ_QUARANTINED` desde `JDBC_COMMITTED`/`REPORT_PENDING` por colisión de hash |
+| 3 | SDK Vertex no especificado | `pom.xml` | Usar `com.google.genai:google-genai` (Google Gen AI SDK para Java) |
+| 4 | Modelo `gemini-2.5-flash` retira 20/10 | `application-dev-vertex.properties` | Confirmar modelo alternativo disponible antes de la fecha de integración |
+| 5 | Binding `app.governor.mode` no verificado | `WorkerProperties.java` | Verificar que `@ConfigurationProperties(prefix="app")` bindea correctamente el campo escalar `Mode governor` |
 
 ---
 
@@ -367,5 +400,5 @@
 ---
 
 **Documento preparado por:** Steven Rivera
-**Commit de referencia:** `4d3c3e1`
+**Commit de referencia:** `95a73e0` (reporte actualizado con correcciones de Carlos)
 **Evidencia:** `docs/evidencia/2026-09-22/`, `docs/pdf-output/Estado_Tecnico_Worker_LNB.pdf`
