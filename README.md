@@ -6,8 +6,10 @@ push de Pub/Sub de un pago confirmado (`PAYMENT_COMMITTED`), lo valida, lo hace 
 un mock de **Sybase DES** con idempotencia atómica por `operationId`, cuarentena (DLQ) y
 recuperación in-doubt, y reporta a un endpoint (Opción B, mockeado).
 
-Estado de la entrega: **`mvn test` 37/37 en verde** (+ harness E2E de 16 escenarios, 16/16 PASS)
-y demo en vivo 7/7 HTTP 200. Cada fase del plan congelado (`lnb-docs/PLAN_IMPLEMENTACION_V0.1.md`)
+Estado de la entrega: **`mvn test` 75/75 en verde** (+ harness E2E de 16 escenarios, 16/16 PASS)
+y demo en vivo 7/7 HTTP 200.
+
+> **Nota sobre el alcance:** Este README documenta el estado de la **PoC local** con mocks deterministas. La integración real con DEV (Vertex AI, Pub/Sub real, JDBC/Sybase) se documenta en `roadmap-agentes-vertex.md` (FASE 0-6). Cada fase del plan congelado (`lnb-docs/PLAN_IMPLEMENTACION_V0.1.md`)
 queda reflejada en `README.md`.
 
 Cómo lo verá una persona del proyecto LNB: este repo es la pieza "adentro" del flujo
@@ -315,9 +317,9 @@ Resultado esperado: 7/7 HTTP 200 (`SUCCEEDED`, `IDEMPOTENT`, `REJECTED` ×2, `DL
 
 ## 9. Limitaciones declaradas de la PoC
 
-- Sybase/`InMemoryStateStore`, Gobernador (`MockGovernor`), Traductor y el endpoint de reporte
-  son deterministas/mock: **no hay JDBC real, ni Pub/Sub, ni Vertex, ni HTTP al endpoint**.
-  `FixtureJdbcExecutor` y `MockResultReporter` son los puntos de sustitución.
+- La PoC corre **todo en mocks deterministas**: `MockGovernor` (Vertex AI), `InMemoryStateStore`
+  (Sybase/JDBC), `MockResultReporter` (endpoint HTTP). **No hay Vertex, Pub/Sub real, JDBC ni
+  HTTP al endpoint.** `FixtureJdbcExecutor` y `MockResultReporter` son los puntos de sustitución.
 - La **atomicidad local del fixture NO demuestra la atomicidad Sybase-almacenamiento del
   Worker** en integración real (un UNKNOWN real requiere decidir entre commit y no-commit).
 - El escenario "evento en vuelo" es **simulado** (registro PROCESSING pre-sembrado), no
@@ -330,7 +332,50 @@ Puntos de sustitución en producción: `Governor` (Vertex AI), `Translator`, `St
 real vía jConnect) y `ResultReporter` (HTTP al endpoint oficial) — el resto del pipeline queda
 intacto.
 
-## 10. Referencias
+## 10. Estado para integración con DEV (PoC vs real)
+
+| Componente | Estado en PoC | Estado en DEV | Responsable | Próxima fecha |
+|---|---|---|---|---|
+| Gobernador (Vertex AI) | `MockGovernor` | SDK + prompt real | **Carlos / Steven** | 9-10 oct (scaffold) |
+| Pub/Sub (push real) | POST HTTP simulado | Suscripción + DLQ real | **JD** | 14-15 oct (config) |
+| JDBC → Sybase | `FixtureJdbcExecutor` | Driver jConnect + VPN | **Alex** | Driver pendiente |
+| Reporte a API | `MockResultReporter` | HTTP real con 409 codes | **Steven + Alex** | Contrato en revisión |
+| Almacenamiento state | `InMemoryStateStore` | JDBC durable (idempotencia entre instancias) | **Steven** | 20 oct (integración) |
+| Outbox → Pub/Sub | No existe | Publicador transaccional | **Steven** (propuesta) | 11-15 oct |
+
+### Invariants del commit (regla de oro del plan)
+
+1. **"Commit significa éxito"**: tras `JDBC_COMMITTED`, la operación **nunca** se reejecuta ni se
+   degrada a DLQ. Un fallo de reporte queda como `REPORT_PENDING` con `reportStatus` y
+   `manualActionRequired`, respondiendo ACK para sacar el mensaje de la suscripción.
+2. **ACK solo con evidencia**: `ack=true` (HTTP 200) implica que hay fila persistida o estado
+   clasificado. `ack=false` (HTTP 500) → Pub/Sub reintenta.
+3. **DLQ funcional ≠ DLQ técnico**: `DLQ_QUARANTINED` (cuarentena funcional) se ACK y queda en el
+   worker; el DLQ nativo de Pub/Sub recibe solo NACKs técnicos agotados.
+4. **`UNKNOWN` nunca se reejecuta**: → `IN_DOUBT`, conciliación posterior por PAYLOAD_HASH.
+
+## 11. Próximas tareas (roadmap E3.x)
+
+| Tarea | Responsable | Estado | Fecha objetivo |
+|---|---|---|---|
+| **E3.0 — Estado base** | Steven | ✅ Completado (`15e2368`) | — |
+| **E3.1 — Gobernador real (Vertex)** | Carlos | ⏳ Pendiente SDK/prompt | 16/10 (review) |
+| **E3.2 — Pub/Sub real + 16 payloads** | Steven | ⏳ Pendiente suscripción JD | 19/10 (ensayo) |
+| **E3.3 — JDBC real → Sybase** | Alex + Steven | ⏳ Pendiente driver+VPN | 20/10 (integración) |
+| **E3.4 — Almacenamiento durable** | Steven | ⏳ Pendiente JDBC real | 20/10 |
+| **E3.5 — Reporte HTTP + 409 codes** | Steven + Alex | ⏳ Pendiente contrato | 16/10 |
+| **E3.6 — Coordinación/contratos** | Todo el equipo | ⏳ Pendiente JD/Alex | 20/10 |
+
+### Checklist Go/No-Go 16 octubre
+
+- [ ] SDK Vertex en `pom.xml` con prompt funcional (E3.1)
+- [ ] Suscripción push + `--invoker` configurado por JD
+- [ ] Driver jConnect recibido de Alex (procedencia/licencia/checksum)
+- [ ] Credenciales Secret Manager operativas
+- [ ] Conectividad JDBC desde Cloud Run → Sybase (`192.168.2.14:5000`)
+- [ ] Contrato 409 del reporte cerrado con Alex
+
+## 12. Referencias
 
 - `lnb-docs/CONTRACT_EVENTO_V0.1.md` — contrato oficial PAYMENT_COMMITTED de Alex (base).
 - `lnb-docs/PLAN_IMPLEMENTACION_V0.1.md` — plan CONGELADO que ejecuta esta implementación.
@@ -342,3 +387,17 @@ intacto.
 - `src/main/resources/catalog/CATALOG_PAYMENT_COMMITTED_V0.1.json` — whitelist real del worker.
 - `docs/evidencia/2026-09-22/README.md` — cómo leer el snapshot congelado de la entrega.
 - `DEMO.md` — runbook corto de la demo.
+
+## 13. Requisitos de despliegue (Docker / Cloud Run)
+
+| Ítem | Valor |
+|---|---|
+| Dockerfile | Multi-stage: build JDK 21.0.6_7 → runtime JRE 21.0.6_7, digest-fijado |
+| Usuario runtime | `uid=1001(lnb)` (no root) |
+| Puerto | `8080` (inyectado por Cloud Run vía `PORT`) |
+| Health check | `/actuator/health/readiness` → `{"status":"UP"}` |
+| Imagen | `worker-poc:dev` (448 MB, local) / Artifact Registry en DEV |
+| Variables | Ver `.env.example` — todo inyecta por `APP_*` |
+| Service account | `sa-run-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com` |
+| Perfil DEV | `dev-vertex` para Gobernador real (`--spring.profiles.active=dev-vertex`) |
+| Permiso push | `run.invoker` sobre el servicio (JD lo habilita) |
