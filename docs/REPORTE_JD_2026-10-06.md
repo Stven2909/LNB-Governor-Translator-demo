@@ -9,8 +9,9 @@
 
 | Responsable | Frente | Estado actual | Pendiente | Criterio de cierre | Fecha entrega |
 |---|---|---|---|---|---|
-| **Carlos** (E3.1) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | 16 escenarios con Vertex real en DEV + prompt versionado + validación anti-alucinación conectada | 16/10 (review técnica) |
-| **Steven** (E3.2–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 16 payloads vía Pub/Sub real + reporte HTTP con contrato 409 cerrado + publicador Outbox operativo | 19/10 (ensayo integral) |
+| **Steven/JD** (E3.1) | Despliegue del worker en Cloud Run | Dockerfile + `.env.example` listos, imagen build verificada | Despliegue en Cloud Run con `sa-run-agentes-dev-lnb` + health checks verificados | Worker desplegado en Cloud Run + health UP + logs visibles | 14-15/10 |
+| **Carlos** (E3.2) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | Adaptador real de Vertex + prompt versionado + respuesta estructurada + validación del catálogo + manejo de errores. **Nota:** la matriz completa de 16 escenarios corresponde al equipo; varios (Base64 inválido, JSON malformado, hash) no invocan Vertex. | 16/10 (review técnica) |
+| **Steven** (E3.3–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 16 payloads vía Pub/Sub real + reporte HTTP con contrato 409 cerrado + publicador Outbox operativo | 19/10 (ensayo integral) |
 | **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado | Dashboard de estado con métricas de worker + alertas configuradas + logs de DEV visibles | 14/10 |
 | **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push autenticada mediante OIDC e IAM, VPN Cloud Run→Sybase, credenciales Secret Manager | Suscripción push operativa + VPN verificada + secretos accesibles por la SA de ejecución | 14-15/10 |
 | **Alex** | PostgreSQL/Sybase, driver jConnect, DDL, credenciales | VM `poc-connect-sybase` verificada (conectividad TCP a `192.168.2.14:5000`) | Driver jConnect (procedencia/licencia), credenciales BD, tablas Sybase DEV | Driver recibido + credenciales operativas + tablas Sybase creadas | Pendiente confirmación |
@@ -66,7 +67,7 @@ BUILD SUCCESS
 ### Desglose de las 75 pruebas (detalle por clase — 10 clases)
 
 #### 2.1 `WorkerPipelineTest` — 24 tests
-**Cobertura:** Suite E2E con contexto Spring real (`@SpringBootTest`). Pipeline completo desde la recepción del mensaje hasta la persistencia en Sybase y el reporte. Incluye los 6 casos de la prueba vertical LNB, subcasos de in-doubt, y las pruebas del plan Fase 5.
+**Cobertura:** Suite E2E con contexto Spring real (`@SpringBootTest`). Pipeline completo desde la recepción del mensaje hasta la **persistencia simulada** mediante `FixtureJdbcExecutor` e `InMemoryStateStore` (no hay JDBC real ni Sybase). Incluye los 6 casos de la prueba vertical LNB, subcasos de in-doubt, y las pruebas del plan Fase 5.
 
 | # | Método | Qué verifica | Estados | Escenario de error/borde |
 |---|---|---|---|---|
@@ -261,6 +262,16 @@ BUILD SUCCESS
 
 ---
 
+### Nota: estado persistido vs respuesta al mensaje
+
+El **estado persistido** en el worker es distinto de la **respuesta al mensaje** de Pub/Sub. Por ejemplo, cuando llega un duplicado (mismo `operationId` + mismo `PAYLOAD_HASH`):
+- La **respuesta al mensaje** es `IDEMPOTENT` (HTTP 200, ACK)
+- El **estado persistido** de la operación sigue siendo `SUCCEEDED` (no cambia)
+
+Esto es correcto: la respuesta le dice a Pub/Sub "no reintentes", mientras el estado interno mantiene el resultado original de la operación.
+
+---
+
 ### Patrones comunes entre suites
 
 | Patrón | Archivos que lo usan |
@@ -379,7 +390,7 @@ BUILD SUCCESS
 | 2 | Credenciales Secret Manager (valores) | Alex/JD | ⏳ Pendiente | **ALTO** — sin credenciales no hay conexión |
 | 3 | Suscripción Pub/Sub push autenticada mediante OIDC e IAM | JD | ⏳ Pendiente | **MEDIO** — bloquea E3.3 pero no E3.4 |
 | 4 | VPN Cloud Run → Sybase | JD | ⏳ Pendiente | **ALTO** — sin VPN no hay conectividad |
-| 5 | SDK Vertex + prompt | Carlos | ⏳ Pendiente | **MEDIO** — bloquea E3.2 pero no E3.4 |
+| 5 | SDK Vertex + prompt | Carlos | ⏳ Pendiente | **MEDIO** — bloquea E3.2 pero no E3.3 |
 | 6 | Contrato 409 del reporte | Alex | ⏳ Pendiente | **BAJO** — no bloquea la prueba de Sybase |
 | 7 | Publicador Outbox → Pub/Sub | **Por confirmar con JD/API; propuesta: Steven** | ⏳ Pendiente | **MEDIO** — bloquea la cadena completa |
 
@@ -425,10 +436,12 @@ BUILD SUCCESS
 | ¿Estado real con evidencia? | ✅ 75/75 tests, 16/16 escenarios, hash intacto, Docker verificado |
 | ¿Requisitos de contenedor? | ✅ Dockerfile + .env.example + service accounts + secretos |
 | ¿Fecha de integración? | 📅 **20/10** (tentativa) — Go/No-Go 16/10, ensayo 19/10 |
-| ¿Dependencias bloqueantes? | ⚠️ Driver jConnect, credenciales, VPN — 3 gates críticos |
+| ¿Dependencias bloqueantes? | ⚠️ **12 condiciones obligatorias** en el Go/No-Go, destacando driver jConnect, credenciales y VPN como bloqueos externos |
 
 ---
 
 **Documento preparado por:** Steven Rivera
-**Commit de referencia:** `95a73e0` (reporte actualizado con correcciones de Carlos)
-**Evidencia:** `docs/evidencia/2026-09-22/`, `docs/pdf-output/Estado_Tecnico_Worker_LNB.pdf`
+**Commit del código probado:** `95a73e0` (75/75 tests en verde)
+**Fuente documental:** `6daa8d5` (criterios de cierre + evidencia Maven 6/10)
+**Versión del reporte:** 1.1
+**Evidencia:** `docs/evidencia/2026-09-22/`, `docs/evidencia/2026-10-06/mvn-test-output.txt`, `docs/pdf-output/Estado_Tecnico_Worker_LNB.pdf`
