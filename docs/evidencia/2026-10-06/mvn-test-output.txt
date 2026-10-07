@@ -1,0 +1,20 @@
+﻿================================================================================
+EVIDENCIA DE EJECUCION — mvn -B test
+Fecha: 2026-10-06
+Commit: 43cc5ee (docs: reporte JD corregido segun revision de Carlos)
+Proyecto: worker-poc (Pagaduria Digital - prueba vertical LNB)
+================================================================================
+
+Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0 -- BranchingCoverageTest
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0 -- CommitMeansSuccessTest
+Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0 -- ConcurrentRedeliveryTest
+Tests run: 1,  Failures: 0, Errors: 0, Skipped: 0 -- DemoEvidenceTest
+Tests run: 8,  Failures: 0, Errors: 0, Skip: 0 -- GovernorFailureClassificationTest
+Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0 -- OperationStateMachineTest
+Tests run: 3,  Failures: 0, Errors: 0, Skip: 0 -- PayloadHasherTest
+Tests run: 24, Failures: 0, Errors: 0, Skip: 0 -- WorkerPipelineTest
+Tests run: 1,  Failures: 0, Errors: 0, Skip: 0 -- WorkerPocApplicationTests
+
+TOTAL: Tests run: 75, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+================================================================================

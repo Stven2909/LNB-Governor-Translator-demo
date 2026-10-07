@@ -7,24 +7,24 @@
 
 ## 1. Tareas estructuradas por responsable
 
-| Responsable | Frente | Estado actual | Pendiente | Fecha entrega |
-|---|---|---|---|---|
-| **Carlos** (E3.1) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | 16/10 (review técnica) |
-| **Steven** (E3.2–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 19/10 (ensayo integral) |
-| **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado | 14/10 |
-| **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push autenticada mediante OIDC e IAM, VPN Cloud Run→Sybase, credenciales Secret Manager | 14-15/10 |
-| **Alex** | PostgreSQL/Sybase, driver jConnect, DDL, credenciales | VM `poc-connect-sybase` verificada (conectividad TCP a `192.168.2.14:5000`) | Driver jConnect (procedencia/licencia), credenciales BD, tablas Sybase DEV | Pendiente confirmación |
-| **Outbox Publisher** | Publicador Outbox → Pub/Sub | No existe | **Responsable por confirmar con JD/API; propuesta: Steven** | Pendiente confirmación |
+| Responsable | Frente | Estado actual | Pendiente | Criterio de cierre | Fecha entrega |
+|---|---|---|---|---|---|
+| **Carlos** (E3.1) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | 16 escenarios con Vertex real en DEV + prompt versionado + validación anti-alucinación conectada | 16/10 (review técnica) |
+| **Steven** (E3.2–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 16 payloads vía Pub/Sub real + reporte HTTP con contrato 409 cerrado + publicador Outbox operativo | 19/10 (ensayo integral) |
+| **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado | Dashboard de estado con métricas de worker + alertas configuradas + logs de DEV visibles | 14/10 |
+| **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push autenticada mediante OIDC e IAM, VPN Cloud Run→Sybase, credenciales Secret Manager | Suscripción push operativa + VPN verificada + secretos accesibles por la SA de ejecución | 14-15/10 |
+| **Alex** | PostgreSQL/Sybase, driver jConnect, DDL, credenciales | VM `poc-connect-sybase` verificada (conectividad TCP a `192.168.2.14:5000`) | Driver jConnect (procedencia/licencia), credenciales BD, tablas Sybase DEV | Driver recibido + credenciales operativas + tablas Sybase creadas | Pendiente confirmación |
+| **Outbox Publisher** | Publicador Outbox → Pub/Sub | No existe | **Responsable por confirmar con JD/API; propuesta: Steven** | Responsable confirmado + publicador operativo + eventos publicados desde PostgreSQL | Pendiente confirmación |
 
 ---
 
 ## 2. Estado real con evidencia
 
-### Lo que YA funciona (verificado hoy)
+### Lo que YA funciona (verificado hoy — 6 de octubre de 2026)
 
 | Componente | Evidencia | Resultado |
 |---|---|---|
-| **Suite de pruebas** | `mvn -B test` (ejecutado 6/10, commit `95a73e0`) | **75/75 tests en verde** (10 clases) |
+| **Suite de pruebas** | `mvn -B test` ejecutado 6/10, commit `43cc5ee` — salida adjunta en `docs/evidencia/2026-10-06/mvn-test-output.txt` | **75/75 tests en verde** (10 clases) |
 | **Harness local del pipeline** | `DemoEvidenceTest` — 16 escenarios con mocks/fixtures | **16/16 PASS** |
 | **Hash canónico** | SHA-256 del payload de referencia | `0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8` — **CORREGIDO** (tenía 66 chars, ahora 64) |
 | **Imagen Docker** | `docker build -t worker-poc:dev .` | Build exitoso — tamaño pendiente de verificar con `docker image inspect` |
@@ -32,6 +32,36 @@
 | **Usuario no-root** | `docker exec worker-test id` | `uid=1001(lnb)` |
 | **Binding de variables** | `APP_MAX_UNKNOWN_RETRIES=99` → falla arranque por `@Max(20)` | Confirmado |
 | **Demo HTTP local** | 7 POSTs a `/push` | 7/7 HTTP 200 — **HTTP 200 demuestra ACK, no necesariamente pago exitoso** |
+
+### Evidencia de ejecución (6 de octubre de 2026)
+
+```
+Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0 -- BranchingCoverageTest
+Tests run: 12, Failures: 0, Errors: 0, Skip: 0 -- CommitMeansSuccessTest
+Tests run: 7,  Failures: 0, Errors: 0, Skip: 0 -- ConcurrentRedeliveryTest
+Tests run: 1,  Failures: 0, Errors: 0, Skip: 0 -- DemoEvidenceTest
+Tests run: 8,  Failures: 0, Errors: 0, Skip: 0 -- GovernorFailureClassificationTest
+Tests run: 4,  Failures: 0, Errors: 0, Skip: 0 -- OperationStateMachineTest
+Tests run: 3,  Failures: 0, Errors: 0, Skip: 0 -- PayloadHasherTest
+Tests run: 24, Failures: 0, Errors: 0, Skip: 0 -- WorkerPipelineTest
+Tests run: 1,  Failures: 0, Errors: 0, Skip: 0 -- WorkerPocApplicationTests
+
+TOTAL: Tests run: 75, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+> **Nota:** La evidencia del harness congelado (`docs/evidencia/2026-09-22/`) corresponde a una corrida del 30/9. La corrida del 6/10 (arriba) confirma que los 75 tests siguen en verde con el código actual.
+
+### Monitoreo (estado actual)
+
+| Componente | Estado | Evidencia |
+|---|---|---|
+| Health checks | ✅ Configurados | `/actuator/health/readiness` → `{"status":"UP"}` |
+| Logs en Cloud Logging | ⏳ Pendiente | No hay servicio desplegado en DEV aún — no hay logs que revisar |
+| Dashboard de estado | ⏳ Pendiente | Henry: pendiente de configuración |
+| Alertas | ⏳ Pendiente | Henry: pendiente de configuración |
+
+> **Nota honesta:** El monitoreo en DEV no tiene evidencia real todavía porque el worker no está desplegado en Cloud Run. Lo que existe es la configuración de health checks y la capacidad de Cloud Logging, pero no hay logs ni métricas de una corrida real en DEV.
 
 ### Desglose de las 75 pruebas (detalle por clase — 10 clases)
 
