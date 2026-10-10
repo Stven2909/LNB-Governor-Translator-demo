@@ -1,0 +1,231 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< com.pagaduriasintetica:worker-poc >------------------
+[INFO] Building worker-poc 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ worker-poc ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ worker-poc ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ worker-poc ---
+[INFO] skip non existing resourceDirectory C:\Users\<user>\Desktop\Proyectos\LNB-DEMO\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ worker-poc ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 13 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] /C:/Users/<user>/Desktop/Proyectos/LNB-DEMO/src/test/java/com/pagaduriasintetica/worker/worker/ConcurrentRedeliveryTest.java: C:\Users\<user>\Desktop\Proyectos\LNB-DEMO\src\test\java\com\pagaduriasintetica\worker\worker\ConcurrentRedeliveryTest.java uses or overrides a deprecated API.
+[INFO] /C:/Users/<user>/Desktop/Proyectos/LNB-DEMO/src/test/java/com/pagaduriasintetica/worker/worker/ConcurrentRedeliveryTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ worker-poc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.pagaduriasintetica.worker.config.WorkerPropertiesTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.108 s -- in com.pagaduriasintetica.worker.config.WorkerPropertiesTest
+[INFO] Running com.pagaduriasintetica.worker.worker.BranchingCoverageTest
+.\mvnw.cmd : Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future 
+releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: 
+https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+En línea: 1 Carácter: 226
++ ... C:\Program Files\Java\jdk-21.0.12"; .\mvnw.cmd -B verify 2>&1 | Tee-O ...
++                                         ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Mockito is curr...ockito.html#0.3:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: A Java agent has been loaded dynamically 
+(C:\Users\<user>\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.11\byte-buddy-agent-1.18.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap 
+classpath has been appended
+17:43:37.358 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rej-9 traceId=7bac4ac2-9a6c-4e27-9a53-1eb7e4772d9f eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.385 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-inv traceId=e4f6e7f0-9e11-4423-bef4-5f5278ffe1c7 eventId=evt-007 payloadHash=686b9a3d3875b3dfb009014460db9cd0a1f27f4c8c011bcbff224fe2d9deb580
+17:43:37.395 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-xtr traceId=f80b11c7-8c8f-4098-95f3-ab0e95bc8ed4 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.405 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Pre-filter REJECTED operationId=op-rej-3 aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.109 s -- in com.pagaduriasintetica.worker.worker.BranchingCoverageTest
+[INFO] Running com.pagaduriasintetica.worker.worker.CommitMeansSuccessTest
+17:43:37.422 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-timeout traceId=ab84147e-46df-4849-9b99-e08884621077 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.422 [main] WARN com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-timeout traceId=ab84147e-46df-4849-9b99-e08884621077 Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex deadline exceeded (timeout=10s)
+17:43:37.431 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-post-bug traceId=b2f81b0a-ba29-4da5-9f82-de87cd609942 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.440 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-post-bug traceId=b2f81b0a-ba29-4da5-9f82-de87cd609942 post-commit failure at delivery 3 of 3, Sybase commit PRESERVED, report blocked, manual action required: java.lang.IllegalStateException: bug en el cliente de reporte
+17:43:37.452 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-func-2 traceId=fdca9486-52a6-42a7-958f-1b60cc2e6262 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.454 [main] WARN com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-func-2 Governor response invalid -> functional quarantine: com.pagaduriasintetica.worker.governor.GovernorInvalidResponseException: respuesta fuera de la whitelist del catalogo
+17:43:37.461 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-fail traceId=1fd3f5e9-fe85-490c-9992-77796418e3f5 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.472 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=4410e8a3-e395-4b83-9cb8-af34e69ba388 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.472 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=4410e8a3-e395-4b83-9cb8-af34e69ba388 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug en el traductor
+17:43:37.472 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=b3a83941-bdf3-4131-b328-2e57d14014db eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.473 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=b3a83941-bdf3-4131-b328-2e57d14014db unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug en el traductor
+17:43:37.475 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=b9a4d0fa-6f28-4322-b4f7-304b65685050 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.475 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=b9a4d0fa-6f28-4322-b4f7-304b65685050 unknown failure exhausted 3 attempts, technical quarantine (no commit happened): java.lang.IllegalStateException: bug en el traductor
+17:43:37.484 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-blocked traceId=5ed66fed-f147-44a1-be52-7e3d07b7e9e2 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.485 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-rep-blocked report failed at delivery 3 of 3: Sybase commit PRESERVED, report blocked, manual action required: Report failed: endpoint caido de forma permanente
+17:43:37.496 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-reject traceId=0680afd9-a843-4d51-b638-31b09a3791a2 eventId=evt-001 payloadHash=d747b086cb715ad23795a5ca6bdc2ceeffd9d881119b4c38e5b5b55d8f5207a6
+17:43:37.535 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-store-fail traceId=0c4c4567-0611-4bb7-bfdb-8a5399343afc eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.536 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-store-fail traceId=0c4c4567-0611-4bb7-bfdb-8a5399343afc unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: No OperationState reserved for op-store-fail
+17:43:37.543 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-retry traceId=1b7c93b3-600d-4925-9426-8499e7a63243 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.545 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-retry traceId=1b5b52c0-96cf-4453-890e-7f52a87911c3 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.556 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-retry traceId=b5e42e83-b1d3-4f8f-a4a7-bc6a949c4436 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+17:43:37.557 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-retry traceId=b5e42e83-b1d3-4f8f-a4a7-bc6a949c4436 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug transitorio
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.147 s -- in com.pagaduriasintetica.worker.worker.CommitMeansSuccessTest
+[INFO] Running com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+17:43:37.689 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest]: ConcurrentRedeliveryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+17:43:37.809 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+17:43:37.885 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest]: ConcurrentRedeliveryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+17:43:37.888 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.1)
+
+2026-10-10T17:43:38.138-06:00  INFO 50336 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : Starting ConcurrentRedeliveryTest using Java 21.0.12 with PID 50336 (started by <user> in C:\Users\<user>\Desktop\Proyectos\LNB-DEMO)
+2026-10-10T17:43:38.139-06:00  INFO 50336 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : No active profile set, falling back to 1 default profile: "default"
+2026-10-10T17:43:40.084-06:00  INFO 50336 --- [worker-poc] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-10-10T17:43:40.174-06:00  INFO 50336 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : Started ConcurrentRedeliveryTest in 2.243 seconds (process running for 4.487)
+2026-10-10T17:43:40.281-06:00  INFO 50336 --- [worker-poc] [           main] c.p.w.config.DeploymentConfigValidator   : Configuracion de despliegue validada: WorkerProperties{governor=MOCK, ingest=PUSH, store=MEMORY, reporter=MOCK, vertex.model=gemini-2.5-flash, vertex.region=us-central1, vertex.promptVersion=governor-v0.1, vertex.timeout=PT30S, jdbc.urlConfigured=false, report.baseUrlConfigured=false, maxUnknownRetries=3, maxReportAttempts=5}
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-7] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-63 traceId=3157fe9d-6d8d-492e-abb8-15beeafec214 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-4] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-60 traceId=e630b7b3-4d7d-4927-b1d3-32fab8df293b eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [ool-3-thread-11] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-67 traceId=1bfe0fd1-e097-4f05-a8c2-df69720a3521 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [ool-3-thread-12] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-68 traceId=f9e23b1b-d411-426c-a72b-9142227d5513 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-1] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-57 traceId=0b775f24-56c0-47e8-8d06-16ed2f00406c eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [ool-3-thread-10] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-66 traceId=c016cd21-d6ac-479a-a759-c1be71e1ce4a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-9] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-65 traceId=dc82947e-41e5-43be-b1dc-f607586dd121 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-2] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-58 traceId=6eb6e5cf-b2f3-4f4e-a9ae-efc6de23d8bf eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-8] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-64 traceId=8ba17671-b2ce-4e58-92fe-c6bd451fc49d eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-6] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-62 traceId=7302610e-b02f-464d-904c-6bc8a983d2e9 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-5] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-61 traceId=f9f86b60-5125-4502-a390-623cf73b3809 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.318-06:00  INFO 50336 --- [worker-poc] [pool-3-thread-3] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-59 traceId=df0b5fb2-082a-4b52-9d8f-f4e79737fae8 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.333-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-3 traceId=87512573-6cba-4b93-9d06-eea640dc08b3 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-4] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=0af09241-50df-4e9c-8c52-acdf69c37798 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-13] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=f64d71f1-237c-4f41-bdc4-2c3e3dd3af05 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-6] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=0f47a236-9f69-4d27-8f90-eb240f225faa eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-16] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=ed07e0b6-542d-4803-bf39-0dc72a6e3ced eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-7] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=8d961f31-b97f-4fd9-a417-4283067fe40e eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-8] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=00db0580-18dc-4935-9f36-03e8be6552e9 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-5] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=02388ae5-0871-4db8-b90a-181700b8bce6 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-2] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=bb1cee05-4f50-4b38-8c35-24f3f1a4c83b eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-1] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=3b96e080-a141-4933-b12f-1b96e4f33760 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-14] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=c87506ff-601e-409e-a936-d3f29cfeeb5a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-15] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=aa2183e6-02e1-4da4-8821-84bcc8fef80d eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-11] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=f29ff820-1444-4382-b338-039431c33dd9 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-12] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=693d7742-697e-4c25-b2fb-1fc956a88805 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-9] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=e6773c04-e6ae-4a4d-a1f9-46e842c83657 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [pool-5-thread-3] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=edfc5017-8a89-4eb9-9ea3-c18281f9429a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.350-06:00  INFO 50336 --- [worker-poc] [ool-5-thread-10] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=0ef42ce8-83b7-46ad-807e-0ae68887bf7c eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.370-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-2 traceId=821718f0-d2e7-4aeb-8d11-48029419ed9a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.370-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-lease-2 abandoned PROCESSING lease reclaimed, attempt=2
+2026-10-10T17:43:40.375-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-1 traceId=3b4aaf88-e68a-4627-9d5d-7f878d00f683 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.820 s -- in com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+[INFO] Running com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-10-10T17:43:40.393-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.DemoEvidenceTest]: DemoEvidenceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.394-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-10-10T17:43:40.395-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.DemoEvidenceTest]: DemoEvidenceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.395-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-10-10T17:43:40.405-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=d415f644-61f8-4eb3-b239-e725beea1b1a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.411-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=f1c6bf41-4fab-46c7-a923-c64857c70218 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.413-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=086435b6-adbe-4b3d-b1f7-6068b6025cff eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.413-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-flight traceId=f350dfa3-250f-47f0-90fc-8e8999e2b55e eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.414-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=246d18d4-05b4-40a7-81fc-2d909f99e8f2 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.415-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=ad136aac-f986-431f-af87-d7acd6bf0181 eventId=evt-001 payloadHash=48c8153e83b1d1fd565d15977e18aad464c8247b1b23e7890a6eca10299fc08b
+2026-10-10T17:43:40.415-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-001 reused with different PAYLOAD_HASH -> quarantine
+2026-10-10T17:43:40.416-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-3 aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+2026-10-10T17:43:40.416-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-3b aggregateType=prizes.payment eventType=PAYMENT_CANCELLED
+2026-10-10T17:43:40.418-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-hall traceId=2de6f50a-6837-4014-a1df-48ccfaa2822b eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.419-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-doubt traceId=12a674d0-e41e-4599-9b95-e4e9394ffc3a eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.422-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-retry traceId=97ee6f56-9d19-4bbd-b524-86cba13cfb3d eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.422-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-bad traceId=2fcdaa61-bacd-4c7c-bd73-9fbed1f36b3b eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.427-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rej-9 traceId=01867384-bf6c-45d3-a6c1-8f122e818641 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.433-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-xtr traceId=95f7cf85-7b47-4703-9893-91340ded389e eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s -- in com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+[INFO] Running com.pagaduriasintetica.worker.worker.GovernorFailureClassificationTest
+2026-10-10T17:43:40.501-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-timeout traceId=dc429f52-a7f6-4b3c-86f4-8d547af4b1ff eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.501-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-timeout traceId=dc429f52-a7f6-4b3c-86f4-8d547af4b1ff Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex deadline exceeded (30s)
+2026-10-10T17:43:40.507-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-invalid traceId=5b54466c-8317-4f53-a09c-8d3bf6dcda06 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.507-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-invalid Governor response invalid -> functional quarantine: com.pagaduriasintetica.worker.governor.GovernorInvalidResponseException: Respuesta no parseable como GovernorContract
+2026-10-10T17:43:40.516-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-reclaim traceId=a0fb5fff-adca-4f72-b314-7ff504c83b4e eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.517-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-reclaim traceId=a0fb5fff-adca-4f72-b314-7ff504c83b4e Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex 503 UNAVAILABLE
+2026-10-10T17:43:40.517-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-reclaim traceId=05b76678-7408-4907-ba00-ffbfeac33225 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.523-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-motivo traceId=44ca0c32-ab05-4122-9e0f-246b64707453 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.523-06:00 ERROR 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-motivo traceId=44ca0c32-ab05-4122-9e0f-246b64707453 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: detalle-interno
+2026-10-10T17:43:40.530-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-config traceId=28ca1dfa-8dad-4957-8dce-0d969d2292a1 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.531-06:00 ERROR 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-config Governor configuration failure: com.pagaduriasintetica.worker.governor.GovernorConfigurationException: Credential not authorized for project
+2026-10-10T17:43:40.538-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-unexpected traceId=6778d5e0-eb4c-4f6d-9136-0afe072b72fd eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.540-06:00 ERROR 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-unexpected traceId=6778d5e0-eb4c-4f6d-9136-0afe072b72fd unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: Falla inesperada del adaptador
+2026-10-10T17:43:40.546-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-terminal traceId=3cd83509-f269-4a1c-89ed-e00d0e6fb0e5 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.548-06:00 ERROR 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-terminal Governor configuration failure: com.pagaduriasintetica.worker.governor.GovernorConfigurationException: permission denied
+2026-10-10T17:43:40.549-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-terminal traceId=7dda5379-0e1a-4eb3-a828-699de87d16c7 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.553-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-tx traceId=8c854987-2669-468d-9e92-d1d49eeaf376 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.553-06:00 ERROR 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-tx traceId=8c854987-2669-468d-9e92-d1d49eeaf376 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: Falla del traductor
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in com.pagaduriasintetica.worker.worker.GovernorFailureClassificationTest
+[INFO] Running com.pagaduriasintetica.worker.worker.OperationStateMachineTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.pagaduriasintetica.worker.worker.OperationStateMachineTest
+[INFO] Running com.pagaduriasintetica.worker.worker.PayloadHasherTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.pagaduriasintetica.worker.worker.PayloadHasherTest
+[INFO] Running com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-10-10T17:43:40.567-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.WorkerPipelineTest]: WorkerPipelineTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.569-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-10-10T17:43:40.570-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.WorkerPipelineTest]: WorkerPipelineTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.571-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-10-10T17:43:40.576-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+2026-10-10T17:43:40.585-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-jdbc traceId=a02995d5-3101-4879-a434-cb9bdcffa948 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.594-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=add8b3cb-dfea-4748-ac42-388e4ab8ea31 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.595-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=c559f25b-546e-40d3-9b07-e06aada8599e eventId=evt-001 payloadHash=48c8153e83b1d1fd565d15977e18aad464c8247b1b23e7890a6eca10299fc08b
+2026-10-10T17:43:40.595-06:00  WARN 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-001 reused with different PAYLOAD_HASH -> quarantine
+2026-10-10T17:43:40.603-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-inv traceId=8875d258-b8e7-4b70-8a88-06d7850eb358 eventId=evt-7 payloadHash=bffe2abc1f05e12268ce7849946e5a8cc9befd760144511595045051ed03a569
+2026-10-10T17:43:40.607-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-flight traceId=6ede27a0-6718-4bf5-a4a0-0c4d5a4d4f1b eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.612-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-hall traceId=ec77af22-6855-45c9-ae3a-1e812a838831 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.617-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-12 traceId=44c4f96c-7614-4925-a69b-dcb3c4c93fec eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.625-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-suc traceId=ef19730d-7eb4-4ee6-af41-665481e4ca9f eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.625-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-suc traceId=00e6b033-778f-4081-a245-6a0359d5a1a3 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.627-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-retry traceId=e95099d2-fc5f-4cd4-8f7e-0b445a81080e eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.630-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-bad traceId=1235ff02-c6d1-470e-96b0-d444facde399 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.633-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=4acd0d75-eede-4577-a94b-6f8537a5b470 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.633-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=0c615458-d9f0-407f-b62a-b997dfc3c0d8 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.644-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-conf traceId=758de3f9-a1a2-48cb-861b-a7fb10a37248 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.645-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-conf report CONFLICT (already reported), no JDBC re-run
+2026-10-10T17:43:40.647-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-unk traceId=e38add2c-a3ec-4890-87df-acd4dc39955c eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.649-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-unk traceId=33ddc1b9-2f1d-45e6-bbf6-472092462026 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.652-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=310c2c73-2db0-4545-bb10-360883d871ae eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.657-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rep traceId=06ea05c3-e345-4075-bcd3-225705cf1b85 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.658-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rep traceId=612e9bca-3c0b-490e-a814-2298e0a7b2e2 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.661-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-doubt traceId=233ad7f7-b4a7-4a32-a11a-da5a8f4f2ed9 eventId=evt-001 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-10-10T17:43:40.665-06:00  INFO 50336 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-2 aggregateType=prizes.payment eventType=PAYMENT_CANCELLED
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s -- in com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+[INFO] Running com.pagaduriasintetica.worker.WorkerPocApplicationTests
+2026-10-10T17:43:40.671-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.WorkerPocApplicationTests]: WorkerPocApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.680-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.WorkerPocApplicationTests
+2026-10-10T17:43:40.681-06:00  INFO 50336 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.WorkerPocApplicationTests]: WorkerPocApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T17:43:40.681-06:00  INFO 50336 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.WorkerPocApplicationTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.pagaduriasintetica.worker.WorkerPocApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 75, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.5.1:jar (default-jar) @ worker-poc ---
+[INFO] Building jar: C:\Users\<user>\Desktop\Proyectos\LNB-DEMO\target\worker-poc-0.0.1-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot:4.1.1:repackage (repackage) @ worker-poc ---
+[INFO] Replacing main artifact C:\Users\<user>\Desktop\Proyectos\LNB-DEMO\target\worker-poc-0.0.1-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+[INFO] The original artifact has been renamed to C:\Users\<user>\Desktop\Proyectos\LNB-DEMO\target\worker-poc-0.0.1-SNAPSHOT.jar.original
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.682 s
+[INFO] Finished at: 2026-10-10T17:43:42-06:00
+[INFO] ------------------------------------------------------------------------
+
+
