@@ -10,12 +10,25 @@
 | Responsable | Frente | Estado actual | Pendiente | Criterio de cierre | Fecha entrega |
 |---|---|---|---|---|---|
 | **Steven/JD** (E3.1) | Despliegue del worker en Cloud Run | Dockerfile + `.env.example` listos, imagen build verificada | Despliegue en Cloud Run con `sa-run-agentes-dev-lnb` + health checks verificados | Worker desplegado en Cloud Run + health UP + logs visibles | 14-15/10 |
-| **Carlos** (E3.2) | Gobernador real (Vertex AI), prompt, contrato con Alex | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales | Adaptador real de Vertex + prompt versionado + respuesta estructurada + validación del catálogo + manejo de errores. **Nota:** la matriz completa de 16 escenarios corresponde al equipo; varios (Base64 inválido, JSON malformado, hash) no invocan Vertex. | 16/10 (review técnica) |
-| **Steven** (E3.3–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de Carlos), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit | 16 payloads vía Pub/Sub real + reporte HTTP con contrato 409 cerrado + publicador Outbox operativo | 19/10 (ensayo integral) |
-| **Henry** | Arquitectura, monitoreo, seguimiento de entrega | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado | Dashboard de estado con métricas de worker + alertas configuradas + logs de DEV visibles | 14/10 |
+| **Steven** (E3.2) | Gobernador real con Vertex AI: Steven implementa Gobernador/Traductor y conserva su código; Daniel valida entorno/IAM con Cloudfly | Scaffold listo (`MockGovernor`, `GovernorContract`, `Catalog.validateGovernor()`) | SDK `com.google.genai:google-genai` en `pom.xml`, prompt estructurado, conectar validación anti-alucinación a respuestas reales; registrar proyecto, región, modelo realmente usado, versiones de prompt/catálogo, timeout/cuotas y casos permitido/denegado/error — **el modelo de referencia `gemini-2.5-flash` de laboratorio no cierra por sí solo el modelo final cloud** (región/modelo/cuotas finales por confirmar) | Adaptador real de Vertex + prompt versionado + respuesta estructurada + validación del catálogo + manejo de errores; **invocaciones reales con respuestas compatibles con el contrato, errores controlados y logs sanitizados**; evidencia de que los agentes IA **no reciben credenciales de BD ni ejecutan JDBC**; laboratorio y modelo de referencia documentados separados. **Nota:** la matriz completa de 16 escenarios corresponde al equipo; varios (Base64 inválido, JSON malformado, hash) no invocan Vertex. | 16/10 (review técnica; JD revisa permisos/entorno en **JD11**) |
+| **Steven** (E3.3–E3.5) | Recorrido del worker, ACK/NACK, errores/reintentos, reporte a la API, publicador Outbox→Pub/Sub. **E3.3:** Steven coordina mensajería con Carlos/Cloudfly — la creación de topic/subscription y la integración real tienen **cierres distintos**; confirmar modalidad de consumo push/pull, identidad, ACK deadline, retry, DLQ, retención y replay. **E3.5:** participa en el contrato de resultado (está en **backlog** por dueño/ruta/contrato pendiente; desbloqueo coordinado por Daniel, **JD15**) | 75/75 tests, 16/16 escenarios, `PushController` + `WorkerService` + estados | SDK Vertex (depende de E3.2), reporte HTTP real, publicador Outbox, validación de eventos (COMMITTED/whitelist), colisión hash post-commit; contrato de resultado: payload, códigos, IAM/OIDC, idempotencia `eventId+attemptNumber`, `integration.sync_attempt`, duplicados/conflictos, persistencia y consulta `legacySyncStatus` | Conservar los 16 payloads y demostrar **ACK, NACK, reentrega, agotamiento y DLQ con evidencias del entorno real** (cada prueba relacionada con su `correlationId` y resultado), validando duplicados y recuperación conforme al contrato aprobado; reporte de éxito/error/repetición probado (**tras `JDBC_COMMITTED`, una caída del reporte no puede repetir JDBC**). Validaciones JD: **JD12** (configuración/recuperación) y **JD23** (DLQ, replay, IN_DOUBT, conciliación), revisión conjunta antes del cierre; contrato de entrada **JD14** | 12–19/10, máximo 31/10 (E3.5, JD15); ensayo integral 19/10 |
+| **Henry** | Arquitectura, monitoreo, seguimiento de entrega; coordina el acuerdo del endpoint y el contrato con Alex | Health checks configurados, plantillas de despliegue | Evidencia de monitoreo en DEV (logs Cloud Logging), dashboard de estado; coordinar dueño/ruta/contrato del endpoint de reporte | Dashboard de estado con métricas de worker + alertas configuradas + logs de DEV visibles + acuerdo de endpoint logrado | 14/10 (monitoreo); 12–19/10 (acuerdo de endpoint) |
 | **JD/LNB** | Infraestructura: Pub/Sub, contenedores, VPN, accesos | Accesos habilitados en `proy-comercial-dev-lnb` | Suscripción push autenticada mediante OIDC e IAM, VPN Cloud Run→Sybase, credenciales Secret Manager | Suscripción push operativa + VPN verificada + secretos accesibles por la SA de ejecución | 14-15/10 |
 | **Alex** | PostgreSQL/Sybase, driver jConnect, DDL, credenciales | VM `poc-connect-sybase` verificada (conectividad TCP a `192.168.2.14:5000`) | Driver jConnect (procedencia/licencia), credenciales BD, tablas Sybase DEV | Driver recibido + credenciales operativas + tablas Sybase creadas | Pendiente confirmación |
 | **Outbox Publisher** | Publicador Outbox → Pub/Sub | No existe | **Responsable por confirmar con JD/API; propuesta: Steven** | Responsable confirmado + publicador operativo + eventos publicados desde PostgreSQL | Pendiente confirmación |
+
+### Relación con tareas JD (comentarios del 09/10)
+
+| Tarea JD | Descripción | Relación con nuestras tareas |
+|---|---|---|
+| **JD11** | Validar entorno Vertex AI del Gobernador y Traductor | JD revisa permisos/entorno de E3.2; Steven conserva implementación y evidencias |
+| **JD12** | Validar Pub/Sub, suscripciones, DLQ y autenticación del consumidor | JD valida configuración/recuperación de E3.3 |
+| **JD14** | Cerrar la compatibilidad del contrato PAYMENT_COMMITTED | Contrato de entrada de E3.2/E3.3 y relación del contrato de resultado (E3.5) |
+| **JD15** | Desbloqueo del endpoint (dueño/ruta/contrato) | Coordinación de Daniel; bloquea E3.5 |
+| **JD20** | Validar reporte de resultado y estado de sincronización en API | Validación de E3.5 y de la consulta `legacySyncStatus` |
+| **JD23** | Validar DLQ, replay, IN_DOUBT y conciliación de datos | Validación de E3.3; revisión conjunta de casos antes del cierre |
+
+> **Nota:** Daniel coordina el desbloqueo (JD15), no programa estos componentes. Cloudfly apoya IAM. Las decisiones, evidencias faltantes y configuraciones no confirmadas quedan **POR CONFIRMAR**.
 
 ---
 
@@ -316,6 +329,7 @@ Esto es correcto: la respuesta le dice a Pub/Sub "no reintentes", mientras el es
 | JDBC → Sybase | Fixture | Falta driver jConnect + VPN + credenciales |
 | Reporte HTTP a la API | Mock | Falta endpoint real + contrato 409 |
 | Almacenamiento durable | InMemory | Falta JDBC real (idempotencia entre instancias) |
+| Consulta `legacySyncStatus` | No existe | Contrato de resultado pendiente (E3.5/JD15) |
 
 ---
 
@@ -382,6 +396,19 @@ Esto es correcto: la respuesta le dice a Pub/Sub "no reintentes", mientras el es
 | Ensayo integral | 19/10 | Todo el equipo | 16 escenarios con Vertex real |
 | **Prueba completa** | **20/10** | Todo el equipo | Cadena completa PostgreSQL → Sybase |
 
+### Contrato de resultado (E3.5) — coordinación JD15
+
+| Ítem | Detalle |
+|---|---|
+| Estado | E3.5 en **backlog** — bloqueo vigente: dueño/ruta/contrato de endpoint interno por confirmar |
+| Coordinación | Daniel (JD15) coordina el desbloqueo; no programa los componentes |
+| Responsables | Henry coordina el acuerdo; Alex desarrolla la API; Carlos mantiene el cliente/Worker; Steven participa en el contrato de resultado; Cloudfly apoya IAM |
+| Actividades | Acordar endpoint, payload, códigos, IAM/OIDC, persistencia y consulta `legacySyncStatus`; `eventId+attemptNumber` e `integration.sync_attempt` forman parte de la propuesta y deben quedar aprobados junto con el comportamiento ante duplicados/conflictos |
+| Criterio de aceptación | Contrato aceptado, endpoint identificado/desplegado y reporte de éxito/error/repetición probado. **Tras `JDBC_COMMITTED`, una caída del reporte no puede repetir JDBC.** |
+| Fechas | 12–19/10; máximo 31/10 |
+| Relaciones | **JD14** (contrato PAYMENT_COMMITTED) · **JD20** (validar reporte de resultado y estado de sincronización en API) |
+| Respaldo | Propuestas de Steven/Alex del 17/09 y E3.5 |
+
 ### Dependencias que pueden bloquear la prueba
 
 | # | Dependencia | Dueño | Estado | Riesgo |
@@ -391,7 +418,7 @@ Esto es correcto: la respuesta le dice a Pub/Sub "no reintentes", mientras el es
 | 3 | Suscripción Pub/Sub push autenticada mediante OIDC e IAM | JD | ⏳ Pendiente | **MEDIO** — bloquea E3.3 pero no E3.4 |
 | 4 | VPN Cloud Run → Sybase | JD | ⏳ Pendiente | **ALTO** — sin VPN no hay conectividad |
 | 5 | SDK Vertex + prompt | Carlos | ⏳ Pendiente | **MEDIO** — bloquea E3.2 pero no E3.3 |
-| 6 | Contrato 409 del reporte | Alex | ⏳ Pendiente | **BAJO** — no bloquea la prueba de Sybase |
+| 6 | Contrato de salida del reporte: dueño, ruta y contrato del endpoint (E3.5) | Alex (API) · Henry (coordinación) · Daniel (JD15, desbloqueo) | ❌ Pendiente — E3.5 backlog | **ALTO** — sin reporte no hay estado final ni ACK seguro (prioridad urgente) |
 | 7 | Publicador Outbox → Pub/Sub | **Por confirmar con JD/API; propuesta: Steven** | ⏳ Pendiente | **MEDIO** — bloquea la cadena completa |
 
 ### Criterio Go/No-Go (16 de octubre)

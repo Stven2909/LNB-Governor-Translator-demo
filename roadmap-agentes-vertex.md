@@ -21,6 +21,8 @@
 - Secret Manager: vista de metadata (sin valores).
 - Logging / Monitoring: consulta.
 
+**Nota (09/10):** integrados los comentarios de JD/Daniel en ClickUp — E3.2 (JD11), E3.3 (JD12/JD23) y contrato de resultado E3.5 (JD15/JD20). Decisiones y configuraciones no confirmadas quedan **POR CONFIRMAR**.
+
 ---
 
 ## FASE 0 — Preparación del entorno local → Cloud
@@ -49,26 +51,33 @@
 
 | # | Tarea | Detalle | Estado |
 |---|---|---|---|
-| 2.1 | Selección de modelo | Gemini en `us-central1` (región del entorno) | Plan |
+| 2.1 | Selección de modelo | Gemini en `us-central1` (región del entorno). Registrar el modelo **realmente usado**: el modelo de referencia `gemini-2.5-flash` de laboratorio **no cierra por sí solo** el modelo final cloud; región/modelo/cuotas finales por confirmar | Plan |
 | 2.2 | Prompt + contrato | Prompt construido con el contrato `CONTRACT_PAYMENT_COMMITTED_V0.1` + `catalog_version`; salida en JSON estructurado | Plan |
 | 2.3 | Implementar `VertexGovernor` | Nueva implementación de la interfaz `Governor`, conmutada por `@ConditionalOnProperty` para convivir con `MockGovernor` en local | Plan |
 | 2.4 | Validación anti-alucinación | Reusar `Catalog.validateGovernor`: si el modelo inventa tabla/acción fuera del catálogo → DLQ | Plan |
 | 2.5 | Robustez | Timeout/retry del LLM; modelo caído → `RETRYABLE + NACK`; medir latencia y costos | Plan |
 | 2.6 | Pruebas | Correr los 16 escenarios con Vertex real: happy path, rechazo del Gobernador, alucinación | Plan |
+| 2.7 | Evidencia de cierre | Registrar proyecto, región, modelo realmente usado, versión de prompt/catálogo, contrato de entrada/salida, timeout/cuotas y pruebas de permitido, denegado y error/timeout | Plan |
+| 2.8 | Separación lab vs cloud | Documentar el laboratorio y su modelo de referencia separados del modelo cloud | Plan |
+| 2.9 | Seguridad (regla JD) | Verificar que los agentes IA no reciben credenciales de BD ni ejecutan JDBC; errores controlados y logs sanitizados | Plan |
+| 2.10 | Validación JD11 | Daniel revisa permisos/entorno con Cloudfly (**JD11**); Steven conserva implementación y evidencias; marcar cualquier bloqueo con su dueño | Plan |
 
-**DoD F2:** el pipeline completo pasa con Vertex real en DEV y el guard anti-DLQ sigue activo.
+**DoD F2:** el pipeline completo pasa con Vertex real en DEV, el guard anti-DLQ sigue activo, la evidencia de 2.7 está adjunta y JD11 está validado.
 
 ## FASE 3 — Pub/Sub real (push al worker)
 
 | # | Tarea | Detalle | Estado |
 |---|---|---|---|
-| 3.1 | Semántica push | 200 = ACK (sin reintento), 500 = NACK (retry); ACK solo con evidencia persistida/clasificada | Plan |
+| 3.0 | Cierres distintos | La creación base de topic/subscription y la validación cloud de la integración real tienen **criterios de cierre distintos** | Plan |
+| 3.1 | Semántica push | 200 = ACK (sin reintento), 500 = NACK (retry); ACK solo con evidencia persistida/clasificada. Confirmar con Carlos/Cloudfly modalidad de consumo (push/pull), identidad, ACK deadline, retry, DLQ, retención y replay | Plan |
 | 3.2 | Suscripción | Crear `subs-pagaduria-dev-agentes` (push a la URL de Cloud Run) con retry policy | Plan |
 | 3.3 | DLQ real | Configurar `topic-pagaduria-dev-deadletter` como destino final de mensajes fallidos | Plan |
 | 3.4 | Prueba integral | Publicar los 16 payloads reales al tópico; verificar SUCCEEDED/REJECTED/IDEMPOTENT/DLQ | Plan |
 | 3.5 | Sin loop | Confirmar que los estados terminales no se reintentan y que el NACK respeta el retry | Plan |
+| 3.6 | Evidencia DEV | Demostrar ACK, NACK, reentrega, agotamiento y DLQ con evidencias del entorno real; cada prueba relacionada con su `correlationId` y resultado; validar duplicados y recuperación conforme al contrato aprobado | Plan |
+| 3.7 | Validaciones JD | JD12 valida configuración/recuperación (Pub/Sub, suscripciones, DLQ, autenticación del consumidor); JD23 valida DLQ, replay, IN_DOUBT y conciliación; revisión conjunta de casos antes del cierre | Plan |
 
-**DoD F3:** 16 escenarios vía Pub/Sub real con resultados correctos; idempotencia sin doble pago.
+**DoD F3:** 16 escenarios vía Pub/Sub real con resultados correctos, evidencia DEV por `correlationId` (3.6) y validaciones JD12/JD23 revisadas conjuntamente; idempotencia sin doble pago.
 
 ## FASE 4 — Concurrencia real
 
@@ -84,16 +93,20 @@
 | # | Tarea | Detalle | Estado |
 |---|---|---|---|
 | 5.1 | Documento de contrato | Payload exacto que el Worker emitirá: `eventId`, `attemptNumber`, `outcome`, `payloadHash`, timestamps | Plan |
-| 5.2 | Implementar `ResultReporter` HTTP | Cliente real configurable con URL placeholder en DEV; auth OIDC/IAM planificada | Plan |
-| 5.3 | Dueño del endpoint | TBD — confirmar con JD/LNB (integración vs agentes) | Abierto |
+| 5.2 | Implementar `ResultReporter` HTTP | Cliente real configurable con URL placeholder en DEV; auth OIDC/IAM planificada (Cloudfly apoya IAM) | Plan |
+| 5.3 | Dueño del endpoint | **Pendiente** — bloqueo vigente: dueño/ruta/contrato de endpoint interno por confirmar; Daniel coordina el desbloqueo (**JD15**). Henry coordina el acuerdo; Alex desarrolla la API; Carlos mantiene el cliente/Worker; Steven participa en el contrato de resultado | Abierto |
+| 5.4 | Idempotencia y sync | Aprobar `eventId+attemptNumber` e `integration.sync_attempt` (PostgreSQL) como parte de la propuesta, con su comportamiento ante duplicados/conflictos | Plan |
+| 5.5 | `legacySyncStatus` | Acordar la consulta de estado de sincronización | Plan |
+| 5.6 | Aceptación del contrato | Contrato aceptado, endpoint identificado/desplegado y reporte de éxito/error/repetición probado; **tras `JDBC_COMMITTED` una caída del reporte no puede repetir JDBC** | Plan |
 
-**DoD F5:** contrato documentado + cliente implementado; pendiente usar la URL real del endpoint.
+**DoD F5:** contrato documentado + cliente implementado + `eventId+attemptNumber`/`integration.sync_attempt` aprobados (JD14/JD15/JD20); pendiente usar la URL real del endpoint. Fechas: 12–19/10, máximo 31/10.
 
 ## FASE 6 — Coordinación (paquetes de salida, no ejecución)
 
 - **A integración (Alex):** DDL del fixture (tablas de la PoC) para Sybase DEV, nota del driver jConnect, y nombres de secretos propuestos.
-- **A Alex (confirmaciones de contrato):** `operationId` ↔ `idempotency_key`, códigos finales de `outcome`, ruta + autenticación del endpoint de reporte.
-- **A JD:** decisiones de stack/transporte y dueño del endpoint (F5.3).
+- **A Alex (confirmaciones de contrato):** `operationId` ↔ `idempotency_key`, códigos finales de `outcome`, ruta + autenticación del endpoint de reporte, `eventId+attemptNumber`, `integration.sync_attempt`, `legacySyncStatus`.
+- **A JD:** decisiones de stack/transporte y dueño del endpoint (F5.3); tareas JD11/JD12/JD14/JD15/JD20/JD23 (ver `docs/REPORTE_JD_2026-10-06.md` → Relación con tareas JD).
+- **Cloudfly:** apoyo IAM para entorno Vertex AI (JD11) y consolidación de IAM/OIDC del reporte.
 - **Limpieza:** apagar los fixtures de la PoC cuando se corone en DEV.
 
 ---
@@ -108,7 +121,8 @@
 
 ## Gates externos que hoy bloquean
 
-1. **Dueño del endpoint de reporte (F5.3)** — confirmar con JD/LNB.
-2. **Confirmaciones de contrato de Alex** — `operationId`, códigos de `outcome`, ruta/auth del reporte.
+1. **Dueño del endpoint de reporte (F5.3 / E3.5)** — confirmar con JD/LNB; Daniel coordina desbloqueo (JD15). E3.5 permanece backlog. Fechas: 12–19/10, máximo 31/10.
+2. **Confirmaciones de contrato de Alex** — `operationId`, códigos de `outcome`, ruta/auth del reporte, `eventId+attemptNumber`, `integration.sync_attempt`, `legacySyncStatus`, comportamiento ante duplicados/conflictos.
 3. **Sybase real** — vía equipo de integración (VM `poc-connect-sybase`).
 4. **QA/PROD** — provisión de LNB (hoy solo DEV).
+5. **Modelo Vertex final cloud** — región/modelo/cuotas finales por confirmar (JD11 con Cloudfly); `gemini-2.5-flash` retira el 20/10/2026.
