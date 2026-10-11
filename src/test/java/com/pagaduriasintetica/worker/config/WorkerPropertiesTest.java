@@ -30,7 +30,7 @@ class WorkerPropertiesTest {
         assertEquals(WorkerProperties.Mode.MOCK, properties.getReporter());
         assertEquals(WorkerProperties.Mode.PUSH, properties.getIngest());
         assertEquals("us-central1", properties.getVertex().getRegion());
-        assertEquals(30, properties.getVertex().getTimeout().getSeconds());
+        assertEquals(5, properties.getVertex().getTimeout().getSeconds());
     }
 
     // Fail-fast: si se pide Vertex sin project-id, el despliegue debe detenerse al arrancar.
@@ -43,6 +43,20 @@ class WorkerPropertiesTest {
         IllegalStateException error = assertThrows(IllegalStateException.class, properties::validateForMode);
 
         assertTrue(error.getMessage().contains("app.vertex.project-id"), error.getMessage());
+    }
+
+    // Fail-fast del ackDeadline: con store=JDBC el presupuesto (vertex+8*jdbc+report) debe ser
+    // MENOR que el ackDeadline, o la entrega NACK-alimentaria a Pub/Sub en cascada.
+    @Test
+    void ackDeadlineMenorQueElPresupuestoDeEntregaFallaAlArrancar() {
+        WorkerProperties properties = new WorkerProperties();
+        properties.setStore(WorkerProperties.Mode.JDBC);
+        properties.getJdbc().setUrl("jdbc:sybase:TDS://host/DB");
+
+        IllegalStateException error = assertThrows(IllegalStateException.class, properties::validateForMode);
+
+        assertTrue(error.getMessage().contains("Fail-fast"), error.getMessage());
+        assertTrue(error.getMessage().contains("ack-deadline"), error.getMessage());
     }
 
     @Test

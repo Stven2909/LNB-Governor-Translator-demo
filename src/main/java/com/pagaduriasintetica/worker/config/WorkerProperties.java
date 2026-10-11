@@ -55,6 +55,14 @@ public class WorkerProperties {
     private PubSub pubsub = new PubSub();
 
     /**
+     * RONDAS MAXIMAS de acceso a estado/JDBC dentro de UNA entrega del pipeline (contadas sobre la
+     * ruta happy path y la de reclaim: reserveAtomic, get/info, findPayment, processing, commit
+     * [insert+transition], markReportPending, markSucceeded). No es un valor asumido: se recalcula
+     * al tocar WorkerService. Multiplica a jdbc.timeout en el presupuesto fail-fast del ackDeadline.
+     */
+    public static final int MAX_DB_ROUND_TRIPS_PER_DELIVERY = 8;
+
+    /**
      * Limite de reintentos para un error NO PREVISTO antes del commit (bug de programacion,
      * dependencia caida). Sin este limite, la rama "excepcion no prevista -> RETRYABLE" hace
      * NACK indefinido y Pub/Sub entra en un ciclo perpetuo (revision de Carlos, Bloque 1).
@@ -110,8 +118,13 @@ public class WorkerProperties {
         @NotNull
         private String promptVersion = "governor-v0.1";
 
+        /**
+         * Timeout de la llamada a Vertex (acepta la request completa con genereic). 5s en DEV
+         * para que el presupuesto de entrega quepa dentro del ackDeadline; en prod se sube junto
+         * con el ackDeadline (fail-fast en validateForMode) si el modelo lo requiere.
+         */
         @NotNull
-        private Duration timeout = Duration.ofSeconds(30);
+        private Duration timeout = Duration.ofSeconds(5);
 
         @Min(1)
         @Max(10)
@@ -520,6 +533,28 @@ public class WorkerProperties {
         if (ingest == Mode.PULL && (pubsub.getSubscriptionId() == null || pubsub.getSubscriptionId().isBlank())) {
             throw new IllegalStateException(
                     "app.ingest.mode=PULL requiere app.pubsub.subscription-id");
+        }
+        failFastAckDeadline();
+    }
+
+    /**
+     * Fail-fast del ackDeadline: el presupuesto de una entrega es
+     * vertex.timeout + report.timeout + [store==JDBC ? MAX_DB_ROUND_TRIPS_PER_DELIVERY * jdbc.timeout : 0].
+     * Si el ackDeadline no lo cubre, la entrega NACK-alimentaria a Pub/Sub en cascada. Se valida al
+     * arrancar, no en la primera request.
+     */
+    private void failFastAckDeadline() {
+        Duration budget = vertex.getTimeout().plus(report.getTimeout());
+        String formula = "vertex.timeout + report.timeout";
+        if (store == Mode.JDBC) {
+            budget = budget.plus(jdbc.getTimeout().multipliedBy(MAX_DB_ROUND_TRIPS_PER_DELIVERY));
+            formula = "vertex.timeout + " + MAX_DB_ROUND_TRIPS_PER_DELIVERY + " x jdbc.timeout (store=JDBC) + report.timeout";
+        }
+        if (pubsub.getAckDeadline().compareTo(budget) <= 0) {
+            throw new IllegalStateException(
+                    "Fail-fast: app.pubsub.ack-deadline (" + pubsub.getAckDeadline()
+                            + ") debe ser MAYOR que el presupuesto de entrega (" + budget
+                            + " = " + formula + ")");
         }
     }
 

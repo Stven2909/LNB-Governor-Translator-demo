@@ -3,6 +3,7 @@ package com.pagaduriasintetica.worker.worker;
 import com.pagaduriasintetica.worker.catalog.Catalog;
 import com.pagaduriasintetica.worker.contract.GovernorContract;
 import com.pagaduriasintetica.worker.contract.GovernorDecision;
+import com.pagaduriasintetica.worker.contract.GovernorEnrichmentStatus;
 import com.pagaduriasintetica.worker.contract.GovernorInput;
 import com.pagaduriasintetica.worker.contract.JdbcExecutionResult;
 import com.pagaduriasintetica.worker.contract.JdbcOutcome;
@@ -145,17 +146,17 @@ public class WorkerService {
         }
         String workerTraceId = UUID.randomUUID().toString();
         String hash = hasher.hash(event.operationData());
-        log.info("Worker received operationId={} traceId={} eventId={} payloadHash={}",
-                operationId, workerTraceId, event.eventId(), hash);
+        // deliveryAttempt es el contador de TRANSPORTE de Pub/Sub (presente cuando la suscripcion
+        // tiene DLQ). No forma parte del contrato de negocio, pero es el limite correcto para
+        // detener un ciclo de redelivery del reporte sin alterar el attemptNumber.
+        int deliveryAttempt = envelope.deliveryAttempt() != null ? envelope.deliveryAttempt() : 0;
+        log.info("Worker received operationId={} traceId={} correlationId={} eventId={} deliveryAttempt={} payloadHash={}",
+                operationId, workerTraceId, event.correlationId(), event.eventId(), deliveryAttempt, hash);
 
         OperationState initial = new OperationState(
                 operationId, event.eventId(), workerTraceId,
                 envelope.message().messageId(), hash,
                 OperationStatus.PROCESSING, 1, null, null, null);
-        // deliveryAttempt es el contador de TRANSPORTE de Pub/Sub (presente cuando la suscripcion
-        // tiene DLQ). No forma parte del contrato de negocio, pero es el limite correcto para
-        // detener un ciclo de redelivery del reporte sin alterar el attemptNumber.
-        int deliveryAttempt = envelope.deliveryAttempt() != null ? envelope.deliveryAttempt() : 0;
         try {
             store.reserveAtomic(initial);
         } catch (DuplicateOperationException d) {
@@ -388,6 +389,14 @@ public class WorkerService {
             return governorCall.failure();
         }
         GovernorContract governorContract = governorCall.contract();
+        if (governorContract.enrichmentStatus() == GovernorEnrichmentStatus.UNAVAILABLE) {
+            log.warn("Governor enrichment UNAVAILABLE operationId={} decision={} reason={}",
+                    operationId, governorContract.decision(),
+                    governorContract.enrichment() != null ? governorContract.enrichment().unavailableReason() : null);
+        } else if (governorContract.enrichmentStatus() == GovernorEnrichmentStatus.ATTACHED) {
+            log.info("Governor enrichment ATTACHED operationId={} decision={}",
+                    operationId, governorContract.decision());
+        }
         if (governorContract.decision() == GovernorDecision.REJECTED) {
             store.markRejected(operationId, governorContract.reason());
             return ProcessingOutcome.ack(OperationStatus.REJECTED, operationId, governorContract.reason());
