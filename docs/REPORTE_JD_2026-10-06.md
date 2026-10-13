@@ -29,6 +29,8 @@
 | **JD23** | Validar DLQ, replay, IN_DOUBT y conciliación de datos | Validación de E3.3; revisión conjunta de casos antes del cierre |
 
 > **Nota:** Daniel coordina el desbloqueo (JD15), no programa estos componentes. Cloudfly apoya IAM. Las decisiones, evidencias faltantes y configuraciones no confirmadas quedan **POR CONFIRMAR**.
+>
+> **E3.2:** notas documentales (advertencia sobre rutas de evidencia de Henry, alcance de `StructuralValidator`, conteo 75→76 y SHA para la prueba cloud) en `docs/local-validation-evidence.md` § "Notas E3.2".
 
 ---
 

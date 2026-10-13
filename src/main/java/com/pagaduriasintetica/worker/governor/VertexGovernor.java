@@ -26,8 +26,11 @@ import java.util.Map;
  * Clasificacion (vease GovernorEnrichmentStatus / GovernorEnrichment.unavailableReason):
  * - 401/403/404 -> GovernorConfigurationException -> el Worker mapea a BLOCKED_CONFIGURATION (ACK terminal).
  * - 408/429/5xx/IO/timeout -> UNAVAILABLE (ACK, decision deterministica intacta), motivo distinguible.
- * - safety block / JSON malformado / responseSchema violado -> UNAVAILABLE con
- *   ENRICHMENT_SAFETY_BLOCK / ENRICHMENT_INVALID / ENRICHMENT_SCHEMA_VIOLATION.
+ * - MAX_TOKENS (truncado) -> UNAVAILABLE con ENRICHMENT_TRUNCATED: respuesta cortada, no valida,
+ *   pero NO es un bloqueo de seguridad (se distingue de ENRICHMENT_SAFETY_BLOCK via knownEnum()).
+ * - safety block / promptFeedback con blockReason -> UNAVAILABLE con ENRICHMENT_SAFETY_BLOCK.
+ * - JSON malformado / responseSchema violado / texto vacio -> UNAVAILABLE con
+ *   ENRICHMENT_INVALID / ENRICHMENT_SCHEMA_VIOLATION / ENRICHMENT_EMPTY.
  */
 public class VertexGovernor implements Governor {
 
@@ -36,6 +39,8 @@ public class VertexGovernor implements Governor {
     static final String CODE_SCHEMA_VIOLATION = "ENRICHMENT_SCHEMA_VIOLATION";
     static final String CODE_INVALID = "ENRICHMENT_INVALID";
     static final String CODE_SAFETY_BLOCK = "ENRICHMENT_SAFETY_BLOCK";
+    static final String CODE_TRUNCATED = "ENRICHMENT_TRUNCATED";
+    static final String CODE_EMPTY = "ENRICHMENT_EMPTY";
     static final String CODE_UNEXPECTED = "VERTEX_UNAVAILABLE_UNEXPECTED";
 
     private final VertexClient client;
@@ -74,12 +79,18 @@ public class VertexGovernor implements Governor {
             return degrade(input, CODE_UNEXPECTED);
         }
 
-        if (outcome == null || outcome.safetyBlocked()) {
+        if (outcome == null) {
+            return degrade(input, CODE_SAFETY_BLOCK);
+        }
+        if (outcome.truncated()) {
+            return degrade(input, CODE_TRUNCATED);
+        }
+        if (outcome.safetyBlocked()) {
             return degrade(input, CODE_SAFETY_BLOCK);
         }
         String text = outcome.text();
         if (text == null || text.isBlank()) {
-            return degrade(input, CODE_SAFETY_BLOCK);
+            return degrade(input, CODE_EMPTY);
         }
         return attach(input, text);
     }

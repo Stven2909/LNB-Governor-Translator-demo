@@ -118,3 +118,20 @@ MEMORY y Reporter MOCK.
 
 No acredita integración real en DEV con Pub/Sub, Vertex AI, Sybase/JDBC, VPN, Cloud Run
 ni contrato definitivo del reporte.
+
+## Notas E3.2 (fuente única de verdad documental)
+
+- **Advertencia sobre evidencia de Henry:** las rutas
+  `docs/evidencia/2026-10-06-henry/http-scenarios.json`,
+  `docs/evidencia/2026-10-06-henry/worker-stdout.log`,
+  `docs/evidencia/2026-10-06-henry/worker-stderr.log`,
+  `docs/evidencia/2026-10-06-henry/monitoring.json` y el script
+  `scripts/verify-local-henry.ps1` **no existen en este repositorio** y no pudieron
+  verificarse aquí; el contenido aportado se deja tal cual, sin alterar.
+- **Alcance E3.2:** `StructuralValidator` queda **fuera** de E3.2 (no se modifica en
+  esta tarea).
+- **Conteo de tests 75 → 76:** el incremento corresponde a **+1 `@Test`** en
+  `WorkerPropertiesTest` (`ackDeadlineMenorQueElPresupuestoDeEntregaFallaAlArrancar()`):
+  master tiene 11 `@Test`, la rama `feat/e3.2-vertex-governor` tiene 12.
+- **SHA para la prueba cloud:** la evidencia cloud con Vertex real usará un **SHA posterior
+  a `825966a`** (commit fijo tras los cambios no bloqueados), nunca `825966a` solo.

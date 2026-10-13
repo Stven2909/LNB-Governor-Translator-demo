@@ -341,8 +341,11 @@ public class WorkerService {
      * G4 (revision de Carlos): clasificar el fallo del Governor en cuatro ramas en vez de dejar
      * que la excepcion suba. Antes, un timeout de Vertex devolvia 500 por el framework y dejaba la
      * reserva en PROCESSING; ahora cada rama deja el estado y el ACK/NACK correctos.
+     * deliveryAttempt se recibe como andamiaje para el futuro cap de reintentos del Governor
+     * (fail-closed pendiente de JD): hoy no altera ninguna rama.
      */
-    private GovernorCall invokeGovernor(PaymentCommittedEvent event, String workerTraceId) {
+    private GovernorCall invokeGovernor(PaymentCommittedEvent event, String workerTraceId,
+                                        int deliveryAttempt) {
         String operationId = event.operationId();
         try {
             return GovernorCall.ok(governor.decide(new GovernorInput(event, workerTraceId)));
@@ -383,7 +386,7 @@ public class WorkerService {
             return ProcessingOutcome.ack(OperationStatus.REJECTED, operationId,
                     "Monetary invariant violated (validationRules)");
         }
-        GovernorCall governorCall = invokeGovernor(event, workerTraceId);
+        GovernorCall governorCall = invokeGovernor(event, workerTraceId, deliveryAttempt);
         if (governorCall.failure() != null) {
             // invokeGovernor ya clasifico el fallo, persistio el estado y decidio el ACK/NACK.
             return governorCall.failure();

@@ -3,6 +3,7 @@ package com.pagaduriasintetica.worker.governor;
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.HttpOptions;
@@ -75,17 +76,30 @@ public class GenaiVertexClient implements VertexClient {
         try {
             text = response.text();
         } catch (RuntimeException e) {
-            return VertexOutcome.blocked();
+            return VertexOutcome.blocked(reasonName(response));
         }
-        boolean safetyBlocked = !"STOP".equals(
-                response.finishReason() != null ? response.finishReason().toString() : null)
+        // knownEnum() distingue MAX_TOKENS (truncado: no valido, pero no es safety) de los
+        // bloqueos reales (SAFETY, PROHIBITED_CONTENT, BLOCKLIST, RECITATION, ...). Comparar por
+        // toString() colapsaba ambos casos en un falso "safety block".
+        FinishReason.Known known =
+                response.finishReason() != null ? response.finishReason().knownEnum() : null;
+        String reasonName = known != null ? known.name() : reasonName(response);
+        if (known == FinishReason.Known.MAX_TOKENS) {
+            return VertexOutcome.truncated(reasonName);
+        }
+        boolean safetyBlocked = known != FinishReason.Known.STOP
                 || response.promptFeedback()
                         .filter(fb -> fb.blockReason().isPresent())
                         .isPresent();
         if (safetyBlocked || text == null || text.isBlank()) {
-            return VertexOutcome.blocked();
+            return VertexOutcome.blocked(reasonName);
         }
         return VertexOutcome.text(text);
+    }
+
+    /** Nombre del finishReason para trazabilidad cuando knownEnum() no esta disponible (null). */
+    private static String reasonName(GenerateContentResponse response) {
+        return response.finishReason() != null ? response.finishReason().toString() : null;
     }
 
     /** Mismo shape que valida VertexGovernor.parseAndValidate: summary, observations, suggested_mapping. */
