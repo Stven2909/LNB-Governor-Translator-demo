@@ -39,8 +39,8 @@ public class DeterministicGovernorSupport {
     }
 
     public GovernorContract approve(GovernorInput input,
-                                    GovernorEnrichmentStatus enrichmentStatus,
-                                    GovernorEnrichment enrichment) {
+                                     GovernorEnrichmentStatus enrichmentStatus,
+                                     GovernorEnrichment enrichment) {
         String aggregateType = input.event().aggregateType();
         Map<String, String> fieldMapping = new LinkedHashMap<>(catalog.fieldMapping(aggregateType));
         Map<String, Object> valueRules = new LinkedHashMap<>();
@@ -58,6 +58,35 @@ public class DeterministicGovernorSupport {
                 Catalog.CATALOG_VERSION,
                 List.of(),
                 enrichmentStatus,
+                enrichment
+        );
+    }
+
+    /**
+     * Veto restrictivo de Vertex (Q1 JD): la traducción altera el sentido de la operación
+     * confirmada. El contrato es REJECTED con el motivo de Vertex y el enriquecimiento
+     * adjunto (contexto para revisión con operationId/correlationId del evento); el plan
+     * queda en null porque no hay escritura que validar. El pago confirmado NO se revierte:
+     * el Worker persiste REJECTED con ACK y jamás ejecuta JDBC. Un veto nunca puede
+     * convertirse en APPROVED: este método solo produce REJECTED.
+     */
+    public GovernorContract reject(GovernorInput input,
+                                   String reason,
+                                   List<String> violations,
+                                   GovernorEnrichment enrichment) {
+        return new GovernorContract(
+                CONTRACT_VERSION,
+                GovernorDecision.REJECTED,
+                input.event().operationId(),
+                input.workerTraceId(),
+                reason,
+                null,
+                null,
+                null,
+                Map.of(),
+                Catalog.CATALOG_VERSION,
+                violations != null ? List.copyOf(violations) : List.of(),
+                GovernorEnrichmentStatus.ATTACHED,
                 enrichment
         );
     }

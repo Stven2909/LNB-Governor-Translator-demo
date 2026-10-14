@@ -116,7 +116,7 @@ public class WorkerProperties {
 
         /** Identifica el prompt en logs y evidencia; se incrementa al cambiar el prompt. */
         @NotNull
-        private String promptVersion = "governor-v0.1";
+        private String promptVersion = "governor-v0.2";
 
         /**
          * Timeout de la llamada a Vertex (acepta la request completa con genereic). 5s en DEV

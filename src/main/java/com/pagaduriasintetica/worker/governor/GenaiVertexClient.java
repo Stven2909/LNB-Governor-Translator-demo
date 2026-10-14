@@ -102,13 +102,28 @@ public class GenaiVertexClient implements VertexClient {
         return response.finishReason() != null ? response.finishReason().toString() : null;
     }
 
-    /** Mismo shape que valida VertexGovernor.parseAndValidate: summary, observations, suggested_mapping. */
+    /**
+     * Mismo shape que valida VertexGovernor.parseAndValidate: decision (veto restrictivo v0.2),
+     * reason, summary, observations, suggested_mapping. La decision de Vertex es SOLO
+     * restrictiva: puede vetar (REJECTED) lo que el deterministico permitio, nunca aprobar lo
+     * que el deterministico rechazo. Los errores tecnicos no viajan aqui: son excepciones.
+     */
     private static Schema buildEnrichmentSchema() {
         return Schema.builder()
                 .type(Known.OBJECT)
-                .title("GovernorEnrichment")
-                .description("Enriquecimiento NO autoritativo. Nunca decide ni modifica el plan/SQL.")
+                .title("GovernorVerdict")
+                .description("Veto restrictivo de continuidad + enriquecimiento. No autoriza pagos.")
                 .properties(Map.of(
+                        "decision", Schema.builder()
+                                .type(Known.STRING)
+                                .enum_("APPROVED", "REJECTED")
+                                .description("APPROVED si evento y traduccion son equivalentes; "
+                                        + "REJECTED si la traduccion altera el sentido de la operacion.")
+                                .build(),
+                        "reason", Schema.builder()
+                                .type(Known.STRING)
+                                .description("Motivo preciso y auditable de la decision.")
+                                .build(),
                         "summary", Schema.builder()
                                 .type(Known.STRING)
                                 .description("Resumen de maximo 2 frases.")
@@ -121,7 +136,7 @@ public class GenaiVertexClient implements VertexClient {
                                 .type(Known.OBJECT)
                                 .description("String-to-string opcional; no cambia el field_mapping.")
                                 .build()))
-                .required("summary", "observations")
+                .required("decision", "reason", "summary", "observations")
                 .build();
     }
 }

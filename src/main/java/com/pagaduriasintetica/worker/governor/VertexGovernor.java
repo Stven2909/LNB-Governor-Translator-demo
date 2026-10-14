@@ -2,6 +2,7 @@ package com.pagaduriasintetica.worker.governor;
 
 import com.pagaduriasintetica.worker.config.WorkerProperties;
 import com.pagaduriasintetica.worker.contract.GovernorContract;
+import com.pagaduriasintetica.worker.contract.GovernorDecision;
 import com.pagaduriasintetica.worker.contract.GovernorEnrichment;
 import com.pagaduriasintetica.worker.contract.GovernorEnrichmentStatus;
 import com.pagaduriasintetica.worker.contract.GovernorInput;
@@ -19,18 +20,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Gobernador real de E3.2: la DECISION y el plan vienen del API determinista (catálogo congelado,
- * via DeterministicGovernorSupport). Vertex AI solo produce ENRIQUECIMIENTO NO AUTORITATIVO que se
- * adjunta al contrato y NUNCA modifica la decision, el plan ni el SQL. No hay reglas ocultas.
+ * Gobernador real de E3.2 (fail-closed, Q1-Q3 JD): Vertex AI ejerce VETO RESTRICTIVO sobre la
+ * continuidad hacia la integracion legacy (prompt governor-v0.2 + responseSchema con decision).
+ * Vertex NUNCA autoriza pagos y NUNCA modifica plan/SQL: la decision APPROVED y el plan vienen
+ * del deterministico (catalogo congelado via DeterministicGovernorSupport); Vertex solo puede
+ * vetar (REJECTED) o enriquecer. Los errores tecnicos NO son decisiones: se lanzan como
+ * excepciones tipadas y el Worker los clasifica sin ejecutar JDBC.
  *
- * Clasificacion (vease GovernorEnrichmentStatus / GovernorEnrichment.unavailableReason):
- * - 401/403/404 -> GovernorConfigurationException -> el Worker mapea a BLOCKED_CONFIGURATION (ACK terminal).
- * - 408/429/5xx/IO/timeout -> UNAVAILABLE (ACK, decision deterministica intacta), motivo distinguible.
- * - MAX_TOKENS (truncado) -> UNAVAILABLE con ENRICHMENT_TRUNCATED: respuesta cortada, no valida,
- *   pero NO es un bloqueo de seguridad (se distingue de ENRICHMENT_SAFETY_BLOCK via knownEnum()).
- * - safety block / promptFeedback con blockReason -> UNAVAILABLE con ENRICHMENT_SAFETY_BLOCK.
- * - JSON malformado / responseSchema violado / texto vacio -> UNAVAILABLE con
- *   ENRICHMENT_INVALID / ENRICHMENT_SCHEMA_VIOLATION / ENRICHMENT_EMPTY.
+ * Clasificacion (el Worker mapea cada rama; ver WorkerService.invokeGovernor):
+ * - 401/403/404 -> GovernorConfigurationException -> BLOCKED_CONFIGURATION (ACK terminal).
+ * - 408/429/5xx/IO/timeout/MAX_TOKENS/inesperado -> GovernorUnavailableException ->
+ *   RETRYABLE + NACK (Pub/Sub reintenta con backoff; al agotar, DLQ nativa). Sin cap exacto
+ *   en codigo: el limite de entregas es aproximado (Q2 JD).
+ * - safety block / promptFeedback con blockReason / texto vacio / JSON malformado /
+ *   responseSchema violado / decision desconocida -> GovernorInvalidResponseException ->
+ *   DLQ_QUARANTINED funcional + ACK (reintentar no ayudaria).
+ * - Veredicto REJECTED de Vertex -> contrato REJECTED (veto): el Worker persiste motivo,
+ *   responde ACK y jamas ejecuta JDBC. El pago confirmado NO se revierte.
  */
 public class VertexGovernor implements Governor {
 
@@ -60,7 +66,7 @@ public class VertexGovernor implements Governor {
         this.promptText = loadPrompt(props.getPromptVersion());
     }
 
-    /** Instruccion fija + contexto de la operacion: enriquecimiento, nunca decision/plan/SQL. */
+    /** Veredicto de continuidad (v0.2) + contexto de la operacion para el veto. */
     @Override
     public GovernorContract decide(GovernorInput input) {
         VertexOutcome outcome;
@@ -73,48 +79,61 @@ public class VertexGovernor implements Governor {
                 throw new GovernorConfigurationException(
                         "Vertex AI call failed " + e.code() + " " + e.status() + ": " + e.getMessage(), e);
             }
-            return degrade(input, codeForTransient(e));
+            throw new GovernorUnavailableException(
+                    "Vertex transitorio (" + codeForTransient(e) + "): " + e.getMessage(), e);
         } catch (Exception e) {
             log.warn("Vertex inesperado para operationId={}", input.event().operationId(), e);
-            return degrade(input, CODE_UNEXPECTED);
+            throw new GovernorUnavailableException("Vertex inesperado: " + e, e);
         }
 
         if (outcome == null) {
-            return degrade(input, CODE_SAFETY_BLOCK);
+            throw new GovernorInvalidResponseException(
+                    "Vertex sin resultado (" + CODE_SAFETY_BLOCK + ")");
         }
         if (outcome.truncated()) {
-            return degrade(input, CODE_TRUNCATED);
+            // MAX_TOKENS: insuficiencia de presupuesto, no bloqueo ni corrupcion. Reintento
+            // via NACK; si persiste, la DLQ nativa lo absorbe (filosofia Q2 JD).
+            throw new GovernorUnavailableException(
+                    "Vertex truncado MAX_TOKENS (" + CODE_TRUNCATED + "): reintento programado");
         }
         if (outcome.safetyBlocked()) {
-            return degrade(input, CODE_SAFETY_BLOCK);
+            throw new GovernorInvalidResponseException(
+                    "Vertex bloqueado por seguridad (" + CODE_SAFETY_BLOCK + ")");
         }
         String text = outcome.text();
         if (text == null || text.isBlank()) {
-            return degrade(input, CODE_EMPTY);
+            throw new GovernorInvalidResponseException(
+                    "Vertex sin contenido (" + CODE_EMPTY + ")");
         }
-        return attach(input, text);
+        return verdict(input, text);
     }
 
-    private GovernorContract attach(GovernorInput input, String text) {
-        GovernorEnrichment enrichment;
+    /** Veredicto APPROVED (deterministico + enrichment) o veto REJECTED (solo restrictivo). */
+    private GovernorContract verdict(GovernorInput input, String text) {
+        ParsedVerdict parsed;
         try {
-            enrichment = parseAndValidate(text);
+            parsed = parseAndValidate(text);
         } catch (SchemaViolation e) {
-            return degrade(input, CODE_SCHEMA_VIOLATION);
+            throw new GovernorInvalidResponseException(
+                    "Vertex schema violado (" + CODE_SCHEMA_VIOLATION + "): " + e.getMessage(), e);
         } catch (InvalidJson e) {
-            return degrade(input, CODE_INVALID);
+            throw new GovernorInvalidResponseException(
+                    "Vertex JSON malformado (" + CODE_INVALID + ")", e.getCause());
         }
-        return support.approve(input, GovernorEnrichmentStatus.ATTACHED, enrichment);
+        if (parsed.decision() == GovernorDecision.REJECTED) {
+            log.warn("Vertex veto operationId={} reason={}", input.event().operationId(), parsed.reason());
+            return support.reject(input, parsed.reason(), List.of("vertex_veto_semantic"),
+                    parsed.enrichment());
+        }
+        return support.approve(input, GovernorEnrichmentStatus.ATTACHED, parsed.enrichment());
     }
 
-    private GovernorContract degrade(GovernorInput input, String reason) {
-        log.warn("Vertex enrichment UNAVAILABLE reason={} operationId={}", reason, input.event().operationId());
-        return support.approve(input, GovernorEnrichmentStatus.UNAVAILABLE,
-                GovernorEnrichment.unavailable(reason));
-    }
-
-    /** JSON invalido vs JSON valido que viola el responseSchema: codigos distinguibles. */
-    private GovernorEnrichment parseAndValidate(String text) {
+    /**
+     * Veredicto v0.2: decision APPROVED/REJECTED (solo restrictiva) + reason auditable +
+     * enriquecimiento adjunto. JSON invalido vs JSON valido que viola el responseSchema:
+     * codigos distinguibles en el mensaje de la excepcion.
+     */
+    private ParsedVerdict parseAndValidate(String text) {
         JsonNode root;
         try {
             root = mapper.readTree(text);
@@ -123,6 +142,20 @@ public class VertexGovernor implements Governor {
         }
         if (root == null || !root.isObject()) {
             throw new SchemaViolation("root is not a JSON object");
+        }
+        JsonNode decision = root.get("decision");
+        if (decision == null || !decision.isTextual()) {
+            throw new SchemaViolation("required string field 'decision' missing");
+        }
+        GovernorDecision verdict;
+        try {
+            verdict = GovernorDecision.valueOf(decision.asText());
+        } catch (IllegalArgumentException e) {
+            throw new SchemaViolation("field 'decision' must be APPROVED or REJECTED");
+        }
+        JsonNode reason = root.get("reason");
+        if (reason == null || !reason.isTextual() || reason.asText().isBlank()) {
+            throw new SchemaViolation("required string field 'reason' missing or empty");
         }
         JsonNode summary = root.get("summary");
         if (summary == null || !summary.isTextual() || summary.asText().isBlank()) {
@@ -153,7 +186,13 @@ public class VertexGovernor implements Governor {
                 suggested.put(key, v.asText());
             }
         }
-        return GovernorEnrichment.attached(summary.asText(), obs, suggested);
+        return new ParsedVerdict(verdict, reason.asText(),
+                GovernorEnrichment.attached(summary.asText(), obs, suggested));
+    }
+
+    /** Veredicto parseado: decision restrictiva + motivo + enriquecimiento adjunto. */
+    private record ParsedVerdict(GovernorDecision decision, String reason,
+                                 GovernorEnrichment enrichment) {
     }
 
     private String codeForTransient(VertexCallException e) {
@@ -178,11 +217,12 @@ public class VertexGovernor implements Governor {
             payload = payload.substring(0, props.getMaxInputChars());
         }
         String aggregateType = input.event().aggregateType();
-        return "Operacion a enriquecer (JSON):\n" + payload
+        return "Operacion a calificar (JSON):\n" + payload
                 + "\n\nContexto: catalog_version=" + support.catalogVersion()
                 + ", target_table=" + support.targetTable(aggregateType)
                 + ", eventType=" + input.event().eventType()
-                + ". Tu respuesta es SOLO enriquecimiento: no decidas, no cambies el plan ni el SQL.";
+                + ". Tu respuesta es el veredicto de continuidad (decision+reason) con "
+                + "enriquecimiento; no cambies el plan ni el SQL.";
     }
 
     private static String loadPrompt(String promptVersion) throws IOException {
