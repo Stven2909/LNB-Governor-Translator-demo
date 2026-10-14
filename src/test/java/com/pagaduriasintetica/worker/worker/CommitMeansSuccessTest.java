@@ -304,7 +304,7 @@ class CommitMeansSuccessTest {
                 base.occurredAt(), base.correlationId(), operationId,
                 new com.pagaduriasintetica.worker.contract.OperationData("pay-001", "claim-001",
                         "COMMITTED", "CASH", new java.math.BigDecimal("200.00"),
-                        new java.math.BigDecimal("50.00"), new java.math.BigDecimal("999.99"), "USD"));
+                        new java.math.BigDecimal("50.00"), new java.math.BigDecimal("999.99"), "USD", null));
     }
 
     // ---------------------------------------------------------------------------------------------

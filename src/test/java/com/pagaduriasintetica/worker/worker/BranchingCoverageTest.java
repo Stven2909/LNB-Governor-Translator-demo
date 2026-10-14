@@ -87,7 +87,7 @@ class BranchingCoverageTest {
     @Test
     void invarianteMonetariaVioladaRejectedAntesDelGobernador() throws Exception {
         OperationData data = new OperationData("pay-001", "claim-001", "COMMITTED", "CASH",
-                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("100.00"), "USD");
+                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("100.00"), "USD", null);
         PaymentCommittedEvent bad = new PaymentCommittedEvent("evt-007", "PAYMENT_COMMITTED",
                 "prizes.payment", "agg-007", 1, "SYBASE", "2026-09-07T00:00:00Z",
                 "corr-007", "op-inv", data);

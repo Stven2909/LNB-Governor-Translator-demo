@@ -185,7 +185,7 @@ class DemoEvidenceTest {
                     "prizes.payment", "agg-002", 1, "SYBASE", "2026-09-07T00:00:00Z", "corr-002",
                     "op-001",
                     new OperationData("pay-002", "claim-002", "COMMITTED", "CASH",
-                            new BigDecimal("199.99"), new BigDecimal("50.00"), new BigDecimal("149.99"), "USD"));
+                            new BigDecimal("199.99"), new BigDecimal("50.00"), new BigDecimal("149.99"), "USD", null));
             String envelope = pushBody(mapper, e2, "msg-002");
             ev.put("envelopeJson", envelope);
             ev.put("evento", evento(e2));

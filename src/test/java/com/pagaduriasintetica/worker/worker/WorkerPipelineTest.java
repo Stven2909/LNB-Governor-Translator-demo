@@ -118,7 +118,7 @@ class WorkerPipelineTest {
                 "evt-001", "PAYMENT_COMMITTED", "prizes.payment", "agg-002", 1,
                 "SYBASE", "2026-09-07T00:00:00Z", "corr-002", "op-001",
                 new OperationData("pay-002", "claim-002", "COMMITTED", "CASH",
-                        new BigDecimal("199.99"), new BigDecimal("50.00"), new BigDecimal("149.99"), "USD"));
+                        new BigDecimal("199.99"), new BigDecimal("50.00"), new BigDecimal("149.99"), "USD", null));
         ProcessingOutcome outcome = handle(differentPayload);
         assertEquals(OperationStatus.DLQ_QUARANTINED, outcome.status());
         assertTrue(outcome.ack());
@@ -243,7 +243,7 @@ class WorkerPipelineTest {
     @Test
     void campoObligatorioAusenteEnOperationDataEsDlq() throws Exception {
         OperationData badData = new OperationData(null, "claim-001", "COMMITTED", "CASH",
-                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("150.00"), "USD");
+                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("150.00"), "USD", null);
         PaymentCommittedEvent e = new PaymentCommittedEvent("evt-5", "PAYMENT_COMMITTED", "prizes.payment",
                 "agg-5", 1, "SYBASE", "2026-09-07T00:00:00Z", "corr-5", "op-miss", badData);
         assertEquals(OperationStatus.DLQ_QUARANTINED, handle(e).status());
@@ -253,7 +253,7 @@ class WorkerPipelineTest {
     @Test
     void montosNegativosEsDlq() throws Exception {
         OperationData negData = new OperationData("pay-6", "claim-6", "COMMITTED", "CASH",
-                new BigDecimal("-1.00"), BigDecimal.ZERO, new BigDecimal("-1.00"), "USD");
+                new BigDecimal("-1.00"), BigDecimal.ZERO, new BigDecimal("-1.00"), "USD", null);
         PaymentCommittedEvent e = new PaymentCommittedEvent("evt-6", "PAYMENT_COMMITTED", "prizes.payment",
                 "agg-6", 1, "SYBASE", "2026-09-07T00:00:00Z", "corr-6", "op-neg", negData);
         assertEquals(OperationStatus.DLQ_QUARANTINED, handle(e).status());
@@ -263,7 +263,7 @@ class WorkerPipelineTest {
     @Test
     void invarianteMonetariaVioladaEsRejected() throws Exception {
         OperationData badData = new OperationData("pay-7", "claim-7", "COMMITTED", "CASH",
-                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("100.00"), "USD");
+                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("100.00"), "USD", null);
         PaymentCommittedEvent e = new PaymentCommittedEvent("evt-7", "PAYMENT_COMMITTED", "prizes.payment",
                 "agg-7", 1, "SYBASE", "2026-09-07T00:00:00Z", "corr-7", "op-inv", badData);
         ProcessingOutcome outcome = handle(e);

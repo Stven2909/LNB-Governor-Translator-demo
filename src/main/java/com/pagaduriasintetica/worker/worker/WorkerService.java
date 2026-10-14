@@ -27,6 +27,7 @@ import com.pagaduriasintetica.worker.translator.Translator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -123,8 +124,14 @@ public class WorkerService {
         }
         PaymentCommittedEvent event;
         try {
-            event = mapper.readValue(bytes, PaymentCommittedEvent.class);
+            // V1 (decisión JD 14/10): root y operationData rechazan campos desconocidos.
+            // Alcance quirúrgico: solo el evento. El envelope Pub/Sub sigue tolerante a
+            // propósito (evolución del transporte; subscription/deliveryAttempt informativos).
+            event = mapper.readerFor(PaymentCommittedEvent.class)
+                    .with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .readValue(bytes);
         } catch (Exception e) {
+            log.warn("operationId=- payload no parseable como PAYMENT_COMMITTED: {}", e.toString());
             store.recordMalformed("-", "Malformed JSON payload");
             return ackDlq("-", "Malformed JSON payload");
         }

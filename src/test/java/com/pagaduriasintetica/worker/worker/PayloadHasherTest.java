@@ -23,16 +23,16 @@ class PayloadHasherTest {
     @Test
     void amountIsNormalizedToTwoDecimals() {
         OperationData data = new OperationData("pay-001", "claim-001", "COMMITTED", "CASH",
-                new BigDecimal("200"), new BigDecimal("50"), new BigDecimal("150"), "USD");
+                new BigDecimal("200"), new BigDecimal("50"), new BigDecimal("150"), "USD", null);
         assertEquals(HASH_OP001, hasher.hash(data));
     }
 
     @Test
     void decimalEquivalence() {
         OperationData a = new OperationData("p", "c", "COMMITTED", "CASH",
-                new BigDecimal("1.10"), BigDecimal.ZERO, new BigDecimal("1.10"), "USD");
+                new BigDecimal("1.10"), BigDecimal.ZERO, new BigDecimal("1.10"), "USD", null);
         OperationData b = new OperationData("p", "c", "COMMITTED", "CASH",
-                new BigDecimal("1.1"), BigDecimal.ZERO, new BigDecimal("1.1"), "USD");
+                new BigDecimal("1.1"), BigDecimal.ZERO, new BigDecimal("1.1"), "USD", null);
         assertEquals(hasher.hash(a), hasher.hash(b));
     }
 }

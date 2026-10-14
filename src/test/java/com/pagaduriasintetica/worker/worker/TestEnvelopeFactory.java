@@ -29,7 +29,7 @@ public final class TestEnvelopeFactory {
     /** operationData canónico del contrato (pay-001 / claim-001 / COMMITTED / CASH / 200.00 etc.). */
     public static OperationData validData() {
         return new OperationData("pay-001", "claim-001", "COMMITTED", "CASH",
-                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("150.00"), "USD");
+                new BigDecimal("200.00"), new BigDecimal("50.00"), new BigDecimal("150.00"), "USD", null);
     }
 
     /** Evento de negocio canónico del contrato; el operationId se pasa por parámetro. */

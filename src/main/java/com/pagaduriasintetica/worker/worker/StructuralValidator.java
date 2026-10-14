@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -87,6 +89,30 @@ public class StructuralValidator {
         }
         if (d.netAmount() == null || d.netAmount().compareTo(BigDecimal.ZERO) <= 0) {
             errors.add("operationData.netAmount must be > 0");
+        }
+        validateInstrumentIds(d.instrumentIds(), errors);
+    }
+
+    /**
+     * Reglas V1 de instrumentIds (andamiaje, decisión JD 14/10): sin blancos, sin duplicados.
+     * instrumentIds==null es válido HASTA el corte V1 (los fixtures actuales no lo traen);
+     * la obligatoriedad (no-nulo, no-vacío) se activa en el commit de integración V1 contra
+     * el schema del productor, no aquí.
+     */
+    void validateInstrumentIds(List<String> ids, List<String> errors) {
+        if (ids == null) {
+            return;
+        }
+        Set<String> seen = new HashSet<>();
+        for (String id : ids) {
+            if (id == null || id.isBlank() || id.length() > 64) {
+                errors.add("operationData.instrumentIds invalid");
+                return;
+            }
+            if (!seen.add(id)) {
+                errors.add("operationData.instrumentIds duplicate");
+                return;
+            }
         }
     }
 
