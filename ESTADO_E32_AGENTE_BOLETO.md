@@ -113,7 +113,7 @@ APP_TICKET_AGENT_PROVENANCE=SYNTHETIC
 - **Verificado el 25/10/2026:** `us-central1` devuelve `404 NOT_FOUND`; `locations/global` devuelve `200`. `APP_TICKET_AGENT_REGION=global` por defecto.
 - **Function calling verificado:** con `toolConfig.mode=ANY`, el modelo devuelve `consultar_boleto` con `lotteryCode`, `drawNumber` y `ticketNumber` correctos.
 - Evidencia: `docs/evidencia/2026-10-25/vertex-function-call.md`.
-- **End-to-end verificado el 25/10/2026:** `POST /api/v1/agent/ticket-query` devolvió `FOUND` con `prize.amount=150.00`, `provenance=SYNTHETIC` y `traceId=smoke-001`, usando Gemini real + WS fixture. Evidencia: `docs/evidencia/2026-10-25/e2e-smoke.md`.
+- **End-to-end verificado el 25/10/2026:** `POST /api/v1/agent/ticket-query` devolvió `FOUND` con `prize.amount=150.00`, `provenance=SYNTHETIC` y `traceId=smoke-001`, usando Gemini real + WS fixture. También se verificaron `NOT_AWARDED`, `NOT_FOUND`, `400 INVALID_INPUT` y `504 WS_TIMEOUT`. Evidencia: `docs/evidencia/2026-10-25/e2e-smoke.md`.
 - **Pendiente único:** WS real de Carlos (modo `HTTP`).
 
 ### Alcance y producción

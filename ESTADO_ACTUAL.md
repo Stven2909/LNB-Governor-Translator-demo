@@ -74,7 +74,7 @@ APP_TICKET_AGENT_PROVENZA=SYNTHETIC
 - Model Garden confirma la línea vigente: `gemini-3.8-flash` (elegido), `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`.
 - El ticket-agent usa `APP_TICKET_AGENT_MODEL` (default `gemini-3.8-flash`) y ya no reutiliza `app.vertex.model`.
 - Verificado el 25/10/2026: `us-central1` → `404 NOT_FOUND`; `locations/global` → `200` con `modelVersion: gemini-3.8-flash`. Default `APP_TICKET_AGENT_REGION=global`.
-- End-to-end verificado: `POST /api/v1/agent/ticket-query` → `FOUND` con `prize.amount=150.00` y `provenance=SYNTHETIC` (Vertex real + WS fixture). Evidencia en `docs/evidencia/2026-10-25/e2e-smoke.md`.
+- End-to-end verificado: `POST /api/v1/agent/ticket-query` → `FOUND` con `prize.amount=150.00` y `provenance=SYNTHETIC` (Vertex real + WS fixture). También `NOT_AWARDED`, `NOT_FOUND`, `400 INVALID_INPUT` y `504 WS_TIMEOUT`. Evidencia en `docs/evidencia/2026-10-25/e2e-smoke.md`.
 - Pendiente: WS real de Carlos (modo `HTTP`).
 
 **WS de Carlos:** No publicado - avanzamos con fixtures SINTÉTICOS.
