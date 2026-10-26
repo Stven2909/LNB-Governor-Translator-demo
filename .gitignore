@@ -44,3 +44,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### JVM / ejecucion local ###
+hs_err_pid*.log
+replay_pid*.log
+vertex-run.log
+

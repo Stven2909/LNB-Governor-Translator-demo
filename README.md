@@ -27,6 +27,7 @@ worker-poc/
 ├── mvnw / mvnw.cmd                  # wrapper Maven (sin instalación necesaria)
 ├── README.md                        # este documento
 ├── DEMO.md                          # runbook corto de la demo (tests + live)
+├── docs/evidencia-agente-boleto.md  # documentación E3.2 agente de consulta de boleto
 ├── lnb-docs/                        # esenciales del proyecto para repo autocontenido
 │   ├── CONTRACT_EVENTO_V0.1.md          # contrato oficial PAYMENT_COMMITTED de Alex (base)
 │   ├── CATALOG_SYNTHETIC_V0.json        # whitelist sintética de referencia V0
@@ -41,11 +42,28 @@ worker-poc/
 ├── scripts/                         # demo en vivo (arranque/jar, POSTs, stop por :8080)
 │   ├── demo-live-start.ps1
 │   ├── demo-live-run.ps1
-│   └── demo-live-stop.ps1
+│   ├── demo-live-stop.ps1
+│   ├── ticket-query.ps1             # runner E3.2 agente de boleto
+│   └── fixtures/
+│       └── tickets/                 # fixtures SINTÉTICOS para pruebas
 └── src/
     ├── main/java/com/pagaduriasintetica/worker/   # código del worker (ver §3)
-    ├── main/resources/application.properties      # config trivial (solo nombre de app)
-    ├── main/resources/catalog/CATALOG_PAYMENT_COMMITTED_V0.1.json  # catálogo en el classpath
+    │   ├── worker/              # handler push, decode, validación, idempotencia, orquestación
+    │   ├── governor/            # Gobernador (Vertex AI o Mock)
+    │   ├── translator/          # sql_template + parameters (8 o 12 params)
+    │   ├── jdbc/                # interfaz + mock local (driver real jConnect después)
+    │   ├── contract/            # DTOs: evento, governor_contract, translator_result, estado
+    │   │   ├── payment/         # DTOs del evento PAYMENT_COMMITTED
+    │   │   └── ticket/          # DTOs del agente de consulta de boleto (E3.2)
+    │   ├── agent/               # agente de consulta de boleto (E3.2)
+    │   │   ├── tool/            # herramientas: TicketQueryTool, Fixture, HTTP
+    │   │   └── TicketAgent*.java
+    │   └── catalog/             # carga CATALOG_PAYMENT_COMMITTED_V0.1.json
+    ├── main/resources/
+    │   ├── application.properties
+    │   ├── catalog/CATALOG_PAYMENT_COMMITTED_V0.1.json
+    │   ├── prompts/ticket-agent-v0.1.txt
+    │   └── fixtures/tickets/*.json
     └── test/java/com/pagaduriasintetica/worker/   # suites + harness de evidencia (ver §6)
 ```
 

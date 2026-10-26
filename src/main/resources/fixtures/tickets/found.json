@@ -1,0 +1,13 @@
+{
+  "found": true,
+  "awarded": true,
+  "ticketNumber": "0012345678",
+  "prize": {
+    "amount": "150.00",
+    "currency": "USD",
+    "category": "CASH"
+  },
+  "collectionStatus": "APROBADO",
+  "provenance": "SYNTHETIC",
+  "requestId": "msg-fixture-001"
+}
