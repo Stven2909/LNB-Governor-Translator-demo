@@ -1,48 +1,60 @@
-﻿# Ticket Query Test Scripts (PowerShell)
- = "http://localhost:8080"
- = @{ "Content-Type" = "application/json" }
+﻿# Runner HTTP del agente de boleto (5 casos: FOUND, NOT_AWARDED, NOT_FOUND, 400, 504).
+# Usa datos SINTETICOS. En modo HTTP puede apuntar al MOCK local
+# (scripts/mock-ticket-ws.ps1); el WS real de Carlos aun NO esta disponible.
+param(
+    [string]$BaseUrl = "http://localhost:8080",
+    [string]$Path = "/api/v1/agent/ticket-query"
+)
 
-# Caso 1: encontrado y premiado
- = @{
-  ticket = @{
-    lotteryCode = "LNB"
-    drawNumber  = "2026-10-15"
-    ticketNumber= "0012345678"
-    series      = "A"
-    checkDigit  = "5"
-  }
-} | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Uri "/api/v1/agent/ticket-query" -Method Post -Headers ( + @{ "X-Request-Id" = "test-001" }) -Body 
+$uri = $BaseUrl + $Path
 
-# Caso 2: no encontrado
- = @{
-  ticket = @{
-    lotteryCode = "LNB"
-    drawNumber  = "2026-10-15"
-    ticketNumber= "9999999999"
-  }
-} | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Uri "/api/v1/agent/ticket-query" -Method Post -Headers ( + @{ "X-Request-Id" = "test-002" }) -Body 
-
-# Caso 3: no premiado
- = @{
-  ticket = @{
-    lotteryCode = "LNB"
-    drawNumber  = "2026-10-15"
-    ticketNumber= "0011111111"
-  }
-} | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Uri "/api/v1/agent/ticket-query" -Method Post -Headers ( + @{ "X-Request-Id" = "test-003" }) -Body 
-
-# Caso 4: entrada inválida
- = @{
-  ticket = @{
-    drawNumber  = "invalid-date"
-    ticketNumber= "123"
-  }
-} | ConvertTo-Json -Depth 5
-try {
-  Invoke-RestMethod -Uri "/api/v1/agent/ticket-query" -Method Post -Headers ( + @{ "X-Request-Id" = "test-004" }) -Body 
-} catch {
-  .Exception.Response
+function Write-Response {
+    param([string]$Id, [int]$Status, [string]$Content)
+    Write-Host "[$Id] HTTP $Status"
+    Write-Host $Content
+    Write-Host ""
 }
+
+function Invoke-TicketCase {
+    param([string]$Id, [string]$Body)
+
+    try {
+        $response = Invoke-WebRequest -Uri $uri -Method Post `
+            -Headers @{ "X-Request-Id" = $Id } `
+            -ContentType "application/json" `
+            -Body $Body `
+            -UseBasicParsing
+        Write-Response -Id $Id -Status ([int]$response.StatusCode) -Content $response.Content
+    }
+    catch {
+        $resp = $_.Exception.Response
+        if ($null -eq $resp -and $null -ne $_.ErrorDetails) {
+            Write-Response -Id $Id -Status 0 -Content $_.ErrorDetails.Message
+            return
+        }
+        if ($null -eq $resp) {
+            Write-Host "[$Id] ERROR $($_.Exception.Message)"
+            Write-Host ""
+            return
+        }
+
+        $status = [int]$resp.StatusCode
+        if ($null -ne $resp.PSObject.Methods["GetResponseStream"]) {
+            $reader = [System.IO.StreamReader]::new($resp.GetResponseStream())
+            $content = $reader.ReadToEnd()
+        }
+        elseif ($null -ne $resp.Content -and $null -ne $resp.Content.PSObject.Methods["ReadAsStringAsync"]) {
+            $content = $resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+        }
+        else {
+            $content = [string]$resp
+        }
+        Write-Response -Id $Id -Status $status -Content $content
+    }
+}
+
+Invoke-TicketCase -Id "smoke-001" -Body '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678","series":"A","checkDigit":"5"}}'
+Invoke-TicketCase -Id "smoke-002" -Body '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0011111111"}}'
+Invoke-TicketCase -Id "smoke-003" -Body '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"9999999999"}}'
+Invoke-TicketCase -Id "smoke-004-invalid" -Body '{"ticket":{"drawNumber":"2026-10-15","ticketNumber":"0012345678"}}'
+Invoke-TicketCase -Id "smoke-005-timeout" -Body '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"TIMEOUT"}}'
