@@ -78,7 +78,7 @@ class ConcurrentRedeliveryTest {
     void reset() {
         store.reset();
         governor.resetOverride();
-        reporter.resetOverride();
+        reporter.reset();
         jdbc.resetOutcome();
         // executeCount() es acumulativo (bean singleton): se mide el delta por caso.
         jdbcBaseline = jdbc.executeCount();
@@ -104,6 +104,8 @@ class ConcurrentRedeliveryTest {
 
         assertEquals(1, jdbcDelta(), "el JDBC debe ejecutarse exactamente una vez");
         assertEquals(1, store.paymentCount("op-conc-1"), "la fila de pago no puede duplicarse");
+        assertEquals(1, reporter.reportCount(),
+                "el reporte debe enviarse una sola vez: las entregas concurrentes no lo duplican");
         assertEquals(OperationStatus.SUCCEEDED, store.get("op-conc-1").status());
         assertEquals(1, store.get("op-conc-1").attemptCount(), "un solo intento debe contar");
 
@@ -140,6 +142,74 @@ class ConcurrentRedeliveryTest {
 
         assertEquals(2, store.get("op-conc-2").attemptCount(), "exactamente un intento nuevo");
         assertEquals(2, attempts.get(), "solo un hilo debe completar la transicion");
+    }
+
+    /**
+     * Reclamo exclusivo del reporte: N entregas concurrentes sobre una operacion con commit
+     * confirmado. Exactamente una gana y las demas ven el lease del dueno. Antes, todas leian
+     * JDBC_COMMITTED y la escritura atrasada chocaba con SUCCEEDED (el flaky del pipeline).
+     */
+    @Test
+    void soloUnaEntregaReclamaElReporteDeUnaOperacionConfirmada() throws Exception {
+        store.seedJdbcCommitted("op-claim-1", HASH_OP001, "SYNTHETIC_PAYMENTS", List.of());
+
+        List<StateStore.ClaimResult> claims = inParallel(THREADS, () -> store.claimReport("op-claim-1"));
+
+        assertEquals(1, claims.stream().filter(c -> c == StateStore.ClaimResult.CLAIMED).count(),
+                "solo una entrega puede ser duena del reporte");
+        assertEquals(THREADS - 1, claims.stream()
+                        .filter(c -> c == StateStore.ClaimResult.IN_FLIGHT).count(),
+                "las demas deben ver el lease del dueno, no robar el reporte");
+        assertEquals(OperationStatus.REPORT_PENDING, store.get("op-claim-1").status());
+        assertTrue(store.leaseIsHeldAndFresh("op-claim-1"), "el dueno del reporte debe retener el lease");
+    }
+
+    /**
+     * Reclamar el reporte de una operacion ya terminada devuelve ALREADY_SUCCEEDED. Es la firma
+     * exacta del flaky: la entrega decide con una foto vieja y la escritura llega tarde.
+     */
+    @Test
+    void reclamarReporteSobreSucceededNoLanzaTransicionIlegal() {
+        store.seedJdbcCommitted("op-claim-2", HASH_OP001, "SYNTHETIC_PAYMENTS", List.of());
+        assertEquals(StateStore.ClaimResult.CLAIMED, store.claimReport("op-claim-2"));
+        store.markSucceeded("op-claim-2");
+
+        assertEquals(StateStore.ClaimResult.ALREADY_SUCCEEDED, store.claimReport("op-claim-2"),
+                "una foto vieja no puede provocar SUCCEEDED -> REPORT_PENDING");
+        assertEquals(OperationStatus.SUCCEEDED, store.get("op-claim-2").status());
+    }
+
+    /** El reclamo para procesar respeta un lease vigente y no infla el intento. */
+    @Test
+    void claimForProcessingNoRobaUnaOperacionEnVuelo() {
+        reserveProcessing("op-claim-3", 1);
+
+        assertEquals(StateStore.ClaimResult.IN_FLIGHT, store.claimForProcessing("op-claim-3"));
+        assertEquals(1, store.get("op-claim-3").attemptCount(),
+                "una operacion en vuelo no se reclama ni suma intentos");
+    }
+
+    /** La recuperacion in-doubt es idempotente: la segunda entrega ve ALREADY_SUCCEEDED. */
+    @Test
+    void laRecuperacionInDoubtEsIdempotente() {
+        store.seedInDoubt("op-claim-4", HASH_OP001, HASH_OP001, "SYNTHETIC_PAYMENTS", List.of());
+
+        assertEquals(StateStore.ClaimResult.CLAIMED, store.claimInDoubtRecovery("op-claim-4"));
+        assertEquals(OperationStatus.SUCCEEDED, store.get("op-claim-4").status());
+        assertEquals(StateStore.ClaimResult.ALREADY_SUCCEEDED,
+                store.claimInDoubtRecovery("op-claim-4"));
+    }
+
+    /** Un PROCESSING abandonado con commit aplicado se recupera sin ejecutar JDBC ni sumar intentos. */
+    @Test
+    void laRecuperacionPromueveUnProcessingAbandonado() {
+        reserveProcessing("op-claim-5", 1);
+        store.releaseLease("op-claim-5");
+
+        assertEquals(StateStore.ClaimResult.CLAIMED, store.claimInDoubtRecovery("op-claim-5"));
+        assertEquals(OperationStatus.SUCCEEDED, store.get("op-claim-5").status());
+        assertEquals(1, store.get("op-claim-5").attemptCount(),
+                "la recuperacion no re-ejecuta JDBC ni cuenta un intento nuevo");
     }
 
     /** Una transicion invalida no se pierde en una carrera: el perdedor falla de forma explicita. */

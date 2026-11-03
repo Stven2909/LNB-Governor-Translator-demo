@@ -30,8 +30,51 @@ public interface StateStore {
     /** -> IN_DOUBT (resultado JDBC indeterminado; se concilia, no se reejecuta JDBC). */
     void markInDoubt(String operationId, String reason);
 
-    /** JDBC_COMMITTED -> REPORT_PENDING (reporte en curso hacia la API). */
-    void markReportPending(String operationId);
+    /**
+     * Resultado de un reclamo atomico. El reclamo existe porque decidir con una foto del estado y
+     * escribir despues es una carrera: entre la lectura y la escritura otra entrega puede completar
+     * la operacion, y la escritura atrasada intentaria una transicion ilegal (p. ej.
+     * SUCCEEDED -> REPORT_PENDING). El reclamo hace la decision y la transicion en una sola
+     * operacion sobre la clave.
+     */
+    enum ClaimResult {
+        /** Esta entrega es la duena del paso. */
+        CLAIMED,
+        /** Otra entrega ya completo la operacion: ACK idempotente, sin repetir el trabajo. */
+        ALREADY_SUCCEEDED,
+        /** Otro dueno tiene un lease vigente: no se roba el trabajo, NACK. */
+        IN_FLIGHT,
+        /** El estado vigente no admite este paso: no se toca, la entrega se devuelve. */
+        NOT_CLAIMABLE
+    }
+
+    /**
+     * Reclamo del paso de REPORTE (JDBC_COMMITTED / REPORT_PENDING / RETRYABLE con fila ya
+     * persistida). Solo la entrega que obtiene CLAIMED transiciona a REPORT_PENDING y reporta.
+     * Con un lease vigente devuelve IN_FLIGHT para que no haya reporte duplicado; si la operacion
+     * ya termino devuelve ALREADY_SUCCEEDED en vez de lanzar una transicion ilegal.
+     */
+    ClaimResult claimReport(String operationId);
+
+    /**
+     * Reclamo de la recuperacion de un intento abandonado cuyo commit YA se aplico
+     * (PROCESSING con lease vencido o IN_DOUBT -> SUCCEEDED). Nunca re-ejecuta JDBC.
+     */
+    ClaimResult claimInDoubtRecovery(String operationId);
+
+    /**
+     * Reclamo para ejecutar el pipeline desde el inicio (RETRYABLE o PROCESSING abandonado). En una
+     * sola operacion comprueba el lease y hace el bump del intento: el segundo que llega ve el lease
+     * renovado y no roba el trabajo.
+     */
+    ClaimResult claimForProcessing(String operationId);
+
+    /**
+     * JDBC_COMMITTED -> REPORT_PENDING (reporte en curso hacia la API) para el DUENO del commit.
+     * Devuelve false si la operacion ya esta SUCCEEDED (otra entrega la completo mientras este
+     * hilo perdia su lease): en ese caso NO corresponde volver a reportar.
+     */
+    boolean markReportPending(String operationId);
 
     /** -> SUCCEEDED (evidencia persistida; ACK). */
     void markSucceeded(String operationId);

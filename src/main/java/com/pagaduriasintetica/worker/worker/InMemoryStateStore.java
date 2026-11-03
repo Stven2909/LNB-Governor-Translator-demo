@@ -144,25 +144,130 @@ public class InMemoryStateStore implements StateStore {
 
     @Override
     public OperationState markProcessing(String operationId) {
-        // Reclamar un intento nuevo. La revalidacion del lease ocurre DENTRO del compute: si el
-        // WorkerService comprueba el lease y despues llama a este metodo, otro hilo podria tomar
-        // la operacion en ese medio tiempo y ambos la ejecutarian. Aqui el segundo que llega ve el
-        // lease ya renovado y no puede robar el trabajo en curso.
-        return states.compute(operationId, (key, current) -> {
+        // Se conserva como API de conveniencia (la usan las pruebas del store): la revalidacion
+        // del lease ocurre dentro de claimForProcessing, no entre dos llamadas.
+        if (claimForProcessing(operationId) != ClaimResult.CLAIMED) {
+            throw new IllegalStateException("Operation cannot be claimed for processing: " + operationId);
+        }
+        return require(operationId);
+    }
+
+    @Override
+    public ClaimResult claimForProcessing(String operationId) {
+        // Decision y transicion en el mismo compute: entre la lectura del estado y el bump del
+        // intento nadie mas puede reclamar. Antes, un hilo leia RETRYABLE, otro lo promovia y el
+        // primero lanzaba "fresh lease" al intentar markProcessing.
+        ClaimResult[] result = {ClaimResult.NOT_CLAIMABLE};
+        states.compute(operationId, (key, current) -> {
             if (current == null) {
-                throw new IllegalStateException("No OperationState reserved for " + key);
+                return null;
             }
-            if (current.status() == OperationStatus.PROCESSING) {
-                Instant expiry = leases.get(key);
-                if (expiry != null && clock.instant().isBefore(expiry)) {
-                    throw new IllegalStateException("Operation in flight with fresh lease: " + key);
+            switch (current.status()) {
+                case SUCCEEDED -> result[0] = ClaimResult.ALREADY_SUCCEEDED;
+                case PROCESSING -> {
+                    if (leaseIsHeldAndFresh(key)) {
+                        result[0] = ClaimResult.IN_FLIGHT;
+                        return current;
+                    }
+                    // Lease vencido o ausente: el intento anterior murio y se reclama con un
+                    // intento nuevo. La maquina permite PROCESSING -> PROCESSING.
+                    result[0] = ClaimResult.CLAIMED;
+                    leases.put(key, clock.instant().plus(leaseDuration));
+                    return current.bumped();
+                }
+                case RETRYABLE -> {
+                    result[0] = ClaimResult.CLAIMED;
+                    leases.put(key, clock.instant().plus(leaseDuration));
+                    return current.withStatus(
+                            machine.transition(current.status(), OperationStatus.PROCESSING)).bumped();
+                }
+                default -> {
+                    // JDBC_COMMITTED / REPORT_PENDING no se re-ejecutan: su camino es claimReport.
+                    return current;
                 }
             }
-            OperationState next = current.withStatus(
-                    machine.transition(current.status(), OperationStatus.PROCESSING)).bumped();
-            leases.put(key, clock.instant().plus(leaseDuration));
-            return next;
+            return current;
         });
+        return result[0];
+    }
+
+    @Override
+    public ClaimResult claimReport(String operationId) {
+        // El reclamo del reporte es exclusivo: el que gana deja REPORT_PENDING con lease renovado
+        // y es el unico que llama al reporter. Los demas ven el lease fresco (IN_FLIGHT) o la
+        // operacion ya terminada (ALREADY_SUCCEEDED), sin lanzar transiciones ilegales.
+        ClaimResult[] result = {ClaimResult.NOT_CLAIMABLE};
+        states.compute(operationId, (key, current) -> {
+            if (current == null) {
+                return null;
+            }
+            switch (current.status()) {
+                case SUCCEEDED -> result[0] = ClaimResult.ALREADY_SUCCEEDED;
+                case JDBC_COMMITTED, REPORT_PENDING, RETRYABLE -> {
+                    if (leaseIsHeldAndFresh(key)) {
+                        result[0] = ClaimResult.IN_FLIGHT;
+                        return current;
+                    }
+                    result[0] = ClaimResult.CLAIMED;
+                    leases.put(key, clock.instant().plus(leaseDuration));
+                    return current.withStatus(
+                                    machine.transition(current.status(), OperationStatus.REPORT_PENDING))
+                            .withReportStatus(ReportStatus.PENDING);
+                }
+                default -> {
+                    return current;
+                }
+            }
+            return current;
+        });
+        return result[0];
+    }
+
+    @Override
+    public ClaimResult claimInDoubtRecovery(String operationId) {
+        // Recuperacion de un commit ya aplicado: PROCESSING abandonado o IN_DOUBT se promueven a
+        // SUCCEEDED sin re-ejecutar JDBC. Si un dueno vivo reclamo la operacion en el intermedio,
+        // el lease lo delata y no se toca.
+        ClaimResult[] result = {ClaimResult.NOT_CLAIMABLE};
+        states.compute(operationId, (key, current) -> {
+            if (current == null) {
+                return null;
+            }
+            switch (current.status()) {
+                case SUCCEEDED -> result[0] = ClaimResult.ALREADY_SUCCEEDED;
+                case IN_DOUBT -> {
+                    result[0] = ClaimResult.CLAIMED;
+                    leases.remove(key);
+                    return succeededEvidence(current.withStatus(
+                            machine.transition(current.status(), OperationStatus.SUCCEEDED)));
+                }
+                case PROCESSING -> {
+                    if (leaseIsHeldAndFresh(key)) {
+                        result[0] = ClaimResult.IN_FLIGHT;
+                        return current;
+                    }
+                    // La maquina prohibe PROCESSING -> SUCCEEDED: el paso legal es promocionar a
+                    // IN_DOUBT primero, en la misma operacion atomica.
+                    OperationState promoted = current.withStatus(
+                                    machine.transition(current.status(), OperationStatus.IN_DOUBT))
+                            .withError("Crash residue: commit was applied, promoting in-doubt");
+                    result[0] = ClaimResult.CLAIMED;
+                    leases.remove(key);
+                    return succeededEvidence(promoted.withStatus(
+                            machine.transition(promoted.status(), OperationStatus.SUCCEEDED)));
+                }
+                case JDBC_COMMITTED, REPORT_PENDING -> {
+                    // El estado avanzo al tramo de reporte: este camino no lo toca. Con lease
+                    // vencido la entrega debe reintentar SOLO el reporte (claimReport).
+                    result[0] = ClaimResult.NOT_CLAIMABLE;
+                }
+                default -> {
+                    return current;
+                }
+            }
+            return current;
+        });
+        return result[0];
     }
 
     @Override
@@ -178,20 +283,40 @@ public class InMemoryStateStore implements StateStore {
     }
 
     @Override
-    public void markReportPending(String operationId) {
+    public boolean markReportPending(String operationId) {
         // El reporte sigue en vuelo: conserva el lease y deja el commit confirmado como PENDING.
-        transition(operationId, OperationStatus.REPORT_PENDING, true,
-                s -> s.withReportStatus(ReportStatus.PENDING));
+        // Si otra entrega ya completo la operacion (lease robado tras vencer), no se lanza una
+        // transicion ilegal ni se dispara un reporte duplicado: se informa que ya no corresponde.
+        boolean[] alreadySucceeded = {false};
+        states.compute(operationId, (key, current) -> {
+            if (current == null) {
+                throw new IllegalStateException("No OperationState reserved for " + key);
+            }
+            if (current.status() == OperationStatus.SUCCEEDED) {
+                alreadySucceeded[0] = true;
+                leases.remove(key);
+                return current;
+            }
+            leases.put(key, clock.instant().plus(leaseDuration));
+            return current.withStatus(
+                            machine.transition(current.status(), OperationStatus.REPORT_PENDING))
+                    .withReportStatus(ReportStatus.PENDING);
+        });
+        return !alreadySucceeded[0];
     }
 
     @Override
     public void markSucceeded(String operationId) {
-        transition(operationId, OperationStatus.SUCCEEDED, false,
-                s -> s.withReportStatus(ReportStatus.SUCCEEDED)
-                        .withManualActionRequired(false)
-                        .withDecision("APPROVED",
-                                s.targetTable() == null ? "-" : s.targetTable(),
-                                "Operación validada correctamente"));
+        transition(operationId, OperationStatus.SUCCEEDED, false, this::succeededEvidence);
+    }
+
+    /** Evidencia comun de exito: el mismo estado final llegue por reporte o por recuperacion. */
+    private OperationState succeededEvidence(OperationState state) {
+        return state.withReportStatus(ReportStatus.SUCCEEDED)
+                .withManualActionRequired(false)
+                .withDecision("APPROVED",
+                        state.targetTable() == null ? "-" : state.targetTable(),
+                        "Operación validada correctamente");
     }
 
     @Override

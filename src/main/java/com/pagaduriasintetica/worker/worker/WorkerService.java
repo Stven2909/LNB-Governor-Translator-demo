@@ -24,6 +24,7 @@ import com.pagaduriasintetica.worker.governor.GovernorConfigurationException;
 import com.pagaduriasintetica.worker.governor.GovernorInvalidResponseException;
 import com.pagaduriasintetica.worker.governor.GovernorUnavailableException;
 import com.pagaduriasintetica.worker.translator.Translator;
+import com.pagaduriasintetica.worker.worker.StateStore.ClaimResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -200,33 +201,28 @@ public class WorkerService {
             case QUARANTINE_TECHNICAL -> ProcessingOutcome.ack(OperationStatus.QUARANTINE_TECHNICAL, operationId,
                     "operationId in technical quarantine after retries exhausted");
             case PROCESSING -> {
-                // El lease decide si hay un dueño vivo. Se consulta PRIMERO y sin excepciones:
-                // mientras el lease este vigente, esta entrega no toca el estado, aunque ya exista
-                // fila en SYNTHETIC_PAYMENTS. Si se mirara la fila primero, una entrega concurrente
-                // podria promover a SUCCEEDED la operacion que el dueño original todavia esta
-                // ejecutando, y el dueño fallaria al intentar REPORT_PENDING sobre un terminal.
-                if (store.leaseIsHeldAndFresh(operationId)) {
-                    yield ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
-                            "Operation in flight (PROCESSING with fresh lease), NACK for scheduled redelivery");
-                }
-                // Lease vencido o ausente: el intento anterior murio (crash o cierre de instancia).
-                // Con fila, el commit SI se aplico: se promueve a in-doubt y luego a SUCCEEDED sin
-                // re-ejecutar JDBC. La máquina prohíbe PROCESSING->SUCCEEDED, así que el paso
-                // legal es PROCESSING->IN_DOUBT->SUCCEEDED.
+                // El lease decide si hay un dueno vivo, pero la decision ya NO se toma con una
+                // foto y una escritura posterior: cada rama reclama de forma atomica. Antes, dos
+                // entregas podian leer PROCESSING, el dueno terminar en SUCCEEDED y la escritura
+                // atrasada intentar SUCCEEDED -> IN_DOUBT / SUCCEEDED -> REPORT_PENDING.
                 if (paymentMatches(operationId, hash)) {
-                    store.markInDoubt(operationId, "Crash residue: commit was applied, promoting in-doubt");
-                    store.markSucceeded(operationId);
-                    yield ProcessingOutcome.ack(OperationStatus.SUCCEEDED, operationId,
-                            "In-doubt recovery: commit already applied, promoted to SUCCEEDED");
+                    // Con fila, el commit YA se aplico: se promueve a SUCCEEDED sin re-ejecutar
+                    // JDBC (PROCESSING -> IN_DOUBT -> SUCCEEDED en una sola operacion).
+                    yield recoverCommitted(operationId, event, workerTraceId, deliveryAttempt);
                 }
-                // Sin fila: la operacion es recuperable. Se reclama (contando un intento nuevo) y se
-                // ejecuta el flujo en esta misma entrega, igual que hace RETRYABLE. Si aqui se
-                // devolviera NACK, la redelivery siguiente veria el lease recien tomado por este
-                // mismo hilo y rebotaria hasta que expirara, quemando un ciclo de lease por intento.
-                OperationState reclaimed = store.markProcessing(operationId);
-                log.warn("operationId={} abandoned PROCESSING lease reclaimed, attempt={}",
-                        operationId, reclaimed.attemptCount());
-                yield processFreshClaim(event, hash, workerTraceId, reclaimed, deliveryAttempt);
+                // Sin fila: la operacion es recuperable. Se reclama (lease + bump del intento en
+                // una sola operacion) y se ejecuta el flujo en esta misma entrega; si otro hilo
+                // tiene el lease vigente, esta entrega no roba el trabajo.
+                yield switch (store.claimForProcessing(operationId)) {
+                    case CLAIMED -> processFreshClaim(event, hash, workerTraceId,
+                            store.get(operationId), deliveryAttempt);
+                    case IN_FLIGHT -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                            "Operation in flight (fresh lease), NACK for scheduled redelivery");
+                    case ALREADY_SUCCEEDED -> ProcessingOutcome.ack(OperationStatus.IDEMPOTENT, operationId,
+                            "Duplicate event already processed (PAYLOAD_HASH matched)");
+                    case NOT_CLAIMABLE -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                            "Operation state changed while claiming, NACK for scheduled redelivery");
+                };
             }
             case RETRYABLE -> {
                 // RETRYABLE puede venir de fallo JDBC temporal (sin fila) o de fallo del reporte
@@ -234,8 +230,16 @@ public class WorkerService {
                 if (paymentMatches(operationId, hash)) {
                     yield retryReport(operationId, event, workerTraceId, deliveryAttempt);
                 }
-                OperationState claimed = store.markProcessing(operationId);
-                yield processFreshClaim(event, hash, workerTraceId, claimed, deliveryAttempt);
+                yield switch (store.claimForProcessing(operationId)) {
+                    case CLAIMED -> processFreshClaim(event, hash, workerTraceId,
+                            store.get(operationId), deliveryAttempt);
+                    case IN_FLIGHT -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                            "Operation already claimed by another delivery, NACK for scheduled redelivery");
+                    case ALREADY_SUCCEEDED -> ProcessingOutcome.ack(OperationStatus.IDEMPOTENT, operationId,
+                            "Duplicate event already processed (PAYLOAD_HASH matched)");
+                    case NOT_CLAIMABLE -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                            "Operation state changed while claiming, NACK for scheduled redelivery");
+                };
             }
             case JDBC_COMMITTED, REPORT_PENDING -> retryReport(operationId, event, workerTraceId, deliveryAttempt);
             case IN_DOUBT -> reconcileInDoubt(operationId, hash);
@@ -250,6 +254,26 @@ public class WorkerService {
                 || status == OperationStatus.REPORT_PENDING
                 || status == OperationStatus.RETRYABLE
                 || status == OperationStatus.IN_DOUBT;
+    }
+
+    /**
+     * El commit ya se aplico (PROCESSING abandonado con fila persistida). Se promueve a SUCCEEDED
+     * sin re-ejecutar JDBC. El reclamo es atomico: si otra entrega completo la operacion en el
+     * intermedio, se responde idempotente en vez de lanzar SUCCEEDED -> IN_DOUBT.
+     */
+    private ProcessingOutcome recoverCommitted(String operationId, PaymentCommittedEvent event,
+                                               String workerTraceId, int deliveryAttempt) {
+        return switch (store.claimInDoubtRecovery(operationId)) {
+            case CLAIMED -> ProcessingOutcome.ack(OperationStatus.SUCCEEDED, operationId,
+                    "In-doubt recovery: commit already applied, promoted to SUCCEEDED");
+            case ALREADY_SUCCEEDED -> ProcessingOutcome.ack(OperationStatus.IDEMPOTENT, operationId,
+                    "Duplicate event already processed (PAYLOAD_HASH matched)");
+            case IN_FLIGHT -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                    "Operation in flight, NACK for scheduled redelivery");
+            // El estado avanzo al tramo de reporte entre la foto y el reclamo: corresponde
+            // reintentar SOLO el reporte, que a su vez vuelve a reclamar de forma atomica.
+            case NOT_CLAIMABLE -> retryReport(operationId, event, workerTraceId, deliveryAttempt);
+        };
     }
 
     private ProcessingOutcome processFresh(PaymentCommittedEvent event, String hash, String workerTraceId,
@@ -454,7 +478,14 @@ public class WorkerService {
 
     private ProcessingOutcome reportAfterJdbc(String operationId, PaymentCommittedEvent event, String workerTraceId,
                                               String targetTable, int attemptCount, int deliveryAttempt) {
-        store.markReportPending(operationId);
+        if (!store.markReportPending(operationId)) {
+            // Otra entrega ya completo la operacion mientras este hilo perdia el lease: no se
+            // repite el reporte ni se intenta una transicion ilegal sobre un terminal.
+            log.info("operationId={} already SUCCEEDED by a competing delivery, skipping duplicate report",
+                    operationId);
+            return ProcessingOutcome.ack(OperationStatus.SUCCEEDED, operationId,
+                    "Report already completed by a competing delivery (no duplicate report)");
+        }
         OperationResult result = new OperationResult(
                 operationId, event.eventId(), event.correlationId(), workerTraceId,
                 targetTable, attemptCount, true);
@@ -481,10 +512,24 @@ public class WorkerService {
     }
 
     // JDBC ya confirmado: en redelivery SÓLO se reintenta el reporte, nunca se re-ejecuta JDBC.
+    // El reclamo del paso es exclusivo: con un lease vigente la entrega se devuelve (IN_FLIGHT) y
+    // si la operacion ya termino se responde idempotente, sin reporte duplicado.
     private ProcessingOutcome retryReport(String operationId, PaymentCommittedEvent event, String workerTraceId,
                                           int deliveryAttempt) {
+        ClaimResult claim = store.claimReport(operationId);
+        if (claim == ClaimResult.ALREADY_SUCCEEDED) {
+            return ProcessingOutcome.ack(OperationStatus.IDEMPOTENT, operationId,
+                    "Duplicate event already processed (PAYLOAD_HASH matched)");
+        }
+        if (claim == ClaimResult.IN_FLIGHT) {
+            return ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                    "Report already in flight, NACK for scheduled redelivery");
+        }
+        if (claim == ClaimResult.NOT_CLAIMABLE) {
+            return ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                    "Operation state changed while deciding report retry, NACK for scheduled redelivery");
+        }
         OperationState current = store.get(operationId);
-        store.markReportPending(operationId);
         OperationResult result = new OperationResult(
                 operationId, event.eventId(), event.correlationId(), workerTraceId,
                 current.targetTable() != null ? current.targetTable() : "-",
@@ -528,17 +573,25 @@ public class WorkerService {
 
     // IN_DOUBT -> conciliación por PAYLOAD_HASH de SYNTHETIC_PAYMENTS: si la fila existe y el
     // hash coincide, el commit ya se aplicó -> SUCCEEDED (sin reejecutar JDBC); si no, DLQ por
-    // inconsistencia.
+    // inconsistencia. La promoción se reclama de forma atómica: si otra entrega ya la completó,
+    // se responde idempotente.
     private ProcessingOutcome reconcileInDoubt(String operationId, String hash) {
         PaymentRow row = store.findPayment(operationId);
-        if (row != null && row.payloadHash().equals(hash)) {
-            store.markSucceeded(operationId);
-            return ProcessingOutcome.ack(OperationStatus.SUCCEEDED, operationId,
-                    "In-doubt recovery: commit already applied, promoted to SUCCEEDED");
+        if (row == null || !row.payloadHash().equals(hash)) {
+            store.markQuarantined(operationId, "Inconsistent DB: no payment row or PAYLOAD_HASH mismatch for IN_DOUBT");
+            return ProcessingOutcome.ack(OperationStatus.DLQ_QUARANTINED, operationId,
+                    "In-doubt reconciliation failed: inconsistent state");
         }
-        store.markQuarantined(operationId, "Inconsistent DB: no payment row or PAYLOAD_HASH mismatch for IN_DOUBT");
-        return ProcessingOutcome.ack(OperationStatus.DLQ_QUARANTINED, operationId,
-                "In-doubt reconciliation failed: inconsistent state");
+        return switch (store.claimInDoubtRecovery(operationId)) {
+            case CLAIMED -> ProcessingOutcome.ack(OperationStatus.SUCCEEDED, operationId,
+                    "In-doubt recovery: commit already applied, promoted to SUCCEEDED");
+            case ALREADY_SUCCEEDED -> ProcessingOutcome.ack(OperationStatus.IDEMPOTENT, operationId,
+                    "Duplicate event already processed (PAYLOAD_HASH matched)");
+            case IN_FLIGHT -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                    "Operation in flight, NACK for scheduled redelivery");
+            case NOT_CLAIMABLE -> ProcessingOutcome.nack(OperationStatus.RETRYABLE, operationId,
+                    "Operation state changed while reconciling, NACK for scheduled redelivery");
+        };
     }
 
     // ¿La fila SYNTHETIC_PAYMENTS ya existe con el PAYLOAD_HASH correcto? Evita re-ejecutar JDBC
