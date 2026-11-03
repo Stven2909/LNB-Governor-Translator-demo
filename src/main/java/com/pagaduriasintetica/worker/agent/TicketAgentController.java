@@ -2,6 +2,7 @@ package com.pagaduriasintetica.worker.agent;
 
 import com.pagaduriasintetica.worker.contract.ticket.TicketQueryRequest;
 import com.pagaduriasintetica.worker.contract.ticket.TicketQueryResult;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,10 @@ public class TicketAgentController {
     @PostMapping("/ticket-query")
     public ResponseEntity<TicketQueryResult> queryTicket(
             @Valid @RequestBody TicketQueryRequest request,
-            @RequestHeader(value = "X-Request-Id", required = false) String requestId) {
-        TicketQueryResult result = ticketAgent.process(request.ticket(), requestId);
+            HttpServletRequest httpRequest) {
+        // Se acepta X-Correlation-Id (convencion del ecosistema) y X-Request-Id (contrato previo).
+        String correlationId = CorrelationId.resolve(httpRequest);
+        TicketQueryResult result = ticketAgent.process(request.ticket(), correlationId);
         return ResponseEntity.ok(result);
     }
 }

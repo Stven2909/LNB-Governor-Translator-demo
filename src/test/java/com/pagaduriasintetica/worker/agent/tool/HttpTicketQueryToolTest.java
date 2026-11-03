@@ -34,6 +34,19 @@ class HttpTicketQueryToolTest {
              "prize":null,"collectionStatus":null,"provenance":"SYNTHETIC"}
             """;
 
+    /** 404 con payload de negocio: el WS declara explicitamente que no encontro el boleto. */
+    private static final String NOT_FOUND_404_BODY = """
+            {"found":false,"awarded":false,"ticketNumber":"9999999999",
+             "prize":null,"collectionStatus":null,"provenance":"REAL"}
+            """;
+
+    /** El WS no declara procedencia: el adaptador debe usar la configurada, no inventarla. */
+    private static final String FOUND_WITHOUT_PROVENANCE_BODY = """
+            {"found":true,"awarded":true,"ticketNumber":"0012345678",
+             "prize":{"amount":"150.00","currency":"USD","category":"CASH"},
+             "collectionStatus":"PENDING"}
+            """;
+
     private static final TicketKey KEY = new TicketKey("LNB", "2026-10-15", "0012345678", "A", "5");
 
     private static TicketAgentProperties props(String baseUrl, String timeout) {
@@ -65,6 +78,8 @@ class HttpTicketQueryToolTest {
             assertTrue(ws.lastRequestBody().contains("\"series\":\"A\""));
             assertTrue(ws.lastRequestBody().contains("\"checkDigit\":\"5\""));
             assertEquals("req-found", ws.lastRequestId());
+            assertEquals("req-found", ws.lastCorrelationId(),
+                    "el mismo id debe viajar al WS por ambas cabeceras");
         }
     }
 
@@ -94,9 +109,9 @@ class HttpTicketQueryToolTest {
     }
 
     @Test
-    void no_encontrado_404_se_traduce_a_not_found() throws Exception {
-        // MOCK: el contrato propuesto puede responder 404; se traduce a NOT_FOUND.
-        try (MockTicketWsServer ws = new MockTicketWsServer().respond(404, "{}")) {
+    void no_encontrado_404_con_payload_de_negocio_se_traduce_a_not_found() throws Exception {
+        // MOCK: el WS responde 404 con un cuerpo que declara found=false; eso SI es NOT_FOUND.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(404, NOT_FOUND_404_BODY)) {
             TicketToolResponse response = tool(props(ws.baseUrl(), "2s"))
                     .query(new TicketKey("LNB", "2026-10-15", "9999999999", null, null), "req-404");
 
@@ -104,6 +119,50 @@ class HttpTicketQueryToolTest {
             assertEquals("9999999999", response.ticketNumber());
             assertEquals("REAL", response.provenance());
         }
+    }
+
+    @Test
+    void not_found_sin_payload_de_negocio_no_se_disfraza_de_no_encontrado() throws Exception {
+        // MOCK: 404 por ruta inexistente con un cuerpo que no declara found. No puede parecer NOT_FOUND.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(404, "{}")) {
+            TicketWsException error = assertThrows(TicketWsException.class,
+                    () -> tool(props(ws.baseUrl(), "2s"))
+                            .query(new TicketKey("LNB", "2026-10-15", "9999999999", null, null), "req-404-vacio"));
+
+            assertTrue(error.getMessage().contains("404"));
+            assertTrue(error.getMessage().contains("payload"));
+        }
+    }
+
+    @Test
+    void not_found_con_cuerpo_vacio_se_reporta_como_ws_error() throws Exception {
+        // MOCK: 404 sin cuerpo. Ambiguo por definicion: no se traduce.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(404, "")) {
+            assertThrows(TicketWsException.class,
+                    () -> tool(props(ws.baseUrl(), "2s"))
+                            .query(new TicketKey("LNB", "2026-10-15", "9999999999", null, null), "req-404-sin-cuerpo"));
+        }
+    }
+
+    @Test
+    void provenance_ausente_usa_la_configurada_y_no_la_inventa() throws Exception {
+        // MOCK: el WS no declara procedencia; manda app.ticket-agent.provenance.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_WITHOUT_PROVENANCE_BODY)) {
+            TicketAgentProperties props = props(ws.baseUrl(), "2s");
+            props.setProvenance("REAL");
+
+            TicketToolResponse response = new HttpTicketQueryTool(props).query(KEY, "req-prov");
+
+            assertEquals("REAL", response.provenance());
+        }
+    }
+
+    @Test
+    void provenance_invalida_falla_al_construir() {
+        TicketAgentProperties props = props("http://127.0.0.1:9090", "2s");
+        props.setProvenance("NO-EXISTE");
+
+        assertThrows(IllegalStateException.class, () -> new HttpTicketQueryTool(props));
     }
 
     @Test

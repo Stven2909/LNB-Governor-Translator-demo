@@ -1,12 +1,14 @@
 package com.pagaduriasintetica.worker.agent.tool;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pagaduriasintetica.worker.agent.exception.InvalidWsResponseException;
 import com.pagaduriasintetica.worker.agent.exception.TicketAgentException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
+import com.pagaduriasintetica.worker.contract.ticket.TicketProvenance;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.http.MediaType;
@@ -22,6 +24,7 @@ import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -33,6 +36,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
 
     private final RestClient restClient;
     private final String lookupUrl;
+    private final String defaultProvenance;
 
     public HttpTicketQueryTool(TicketAgentProperties props) {
         if (!StringUtils.hasText(props.getBaseUrl())) {
@@ -41,11 +45,25 @@ public class HttpTicketQueryTool implements TicketQueryTool {
 
         // base-url se recibe completo para poder apuntar a un mock local o al WS de Carlos.
         this.lookupUrl = props.getBaseUrl() + props.getLookupPath();
+        this.defaultProvenance = parseProvenance(props.getProvenance()).name();
         Duration timeout = parseTimeout(props.getTimeout());
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(timeout);
         requestFactory.setReadTimeout(timeout);
         this.restClient = RestClient.builder().requestFactory(requestFactory).build();
+    }
+
+    /**
+     * Procedencia declarada por configuracion. Solo se usa cuando el WS no la envia: la
+     * fuente real debe decirla, y si calla no se adivina. El valor por defecto es SYNTHETIC,
+     * asi que para afirmar REAL hay que configurarlo de forma explicita contra el WS autorizado.
+     */
+    private static TicketProvenance parseProvenance(String value) {
+        try {
+            return TicketProvenance.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("app.ticket-agent.provenance invalida: " + value, e);
+        }
     }
 
     private static Duration parseTimeout(String value) {
@@ -74,6 +92,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                     .uri(lookupUrl)
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("X-Request-Id", requestId)
+                    .header("X-Correlation-Id", requestId)
                     .body(serialize(body))
                     .retrieve()
                     .toEntity(TicketToolResponse.class)
@@ -82,10 +101,18 @@ public class HttpTicketQueryTool implements TicketQueryTool {
             if (response == null) {
                 throw new InvalidWsResponseException("Respuesta WS nula");
             }
-            return response;
+            return withDefaultProvenance(response);
         } catch (RestClientResponseException e) {
             if (e.getStatusCode().value() == 404) {
-                return new TicketToolResponse(false, false, key.ticketNumber(), null, null, "REAL");
+                // Un 404 solo es NOT_FOUND si el WS lo dice con un payload de negocio.
+                // Un 404 de ruta equivocada no puede disfrazarse de "boleto no encontrado":
+                // eso reportaria un dato falso con procedencia real.
+                TicketToolResponse notFound = notFoundFromPayload(e.getResponseBodyAsString());
+                if (notFound != null) {
+                    return withDefaultProvenance(notFound);
+                }
+                throw new TicketWsException(
+                        "404 del WS sin payload de negocio (found=false): no se traduce a NOT_FOUND", e);
             }
             throw new TicketWsException("Error WS: " + e.getStatusCode(), e);
         } catch (ResourceAccessException e) {
@@ -103,6 +130,43 @@ public class HttpTicketQueryTool implements TicketQueryTool {
             }
             throw new InvalidWsResponseException("Respuesta invalida del WS de tickets", e);
         }
+    }
+
+    /**
+     * Extrae un NOT_FOUND de negocio solo si el cuerpo lo declara: debe ser un objeto JSON con
+     * el campo "found" presente y en false. Cualquier otra cosa (cuerpo vacio, "{}", HTML de
+     * un proxy, error de ruta) se considera ambigua y no se traduce.
+     */
+    private static TicketToolResponse notFoundFromPayload(String body) {
+        if (!StringUtils.hasText(body)) {
+            return null;
+        }
+        try {
+            JsonNode node = JSON.readTree(body);
+            if (node == null || !node.isObject() || !node.has("found")) {
+                return null;
+            }
+            if (node.get("found").asBoolean(true)) {
+                return null;
+            }
+            return JSON.treeToValue(node, TicketToolResponse.class);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    /** La procedencia del payload manda; la configurada solo cubre el caso en que el WS calle. */
+    private TicketToolResponse withDefaultProvenance(TicketToolResponse response) {
+        if (StringUtils.hasText(response.provenance())) {
+            return response;
+        }
+        return new TicketToolResponse(
+                response.found(),
+                response.awarded(),
+                response.ticketNumber(),
+                response.prize(),
+                response.collectionStatus(),
+                defaultProvenance);
     }
 
     private static String serialize(Map<String, Object> body) {

@@ -114,4 +114,71 @@ class TicketAgentControllerTest {
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("INVALID_RESPONSE"));
     }
+
+    @Test
+    void correlacion_se_conserva_en_entrada_invalida() throws Exception {
+        mvc().perform(post(URL)
+                        .header("X-Correlation-Id", "corr-400")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.traceId").value("corr-400"));
+    }
+
+    @Test
+    void correlacion_se_conserva_en_timeout() throws Exception {
+        TicketQueryTool lento = (key, traceId) -> {
+            throw new TicketTimeoutException("Timeout del WS de tickets");
+        };
+        mvc(lento).perform(post(URL)
+                        .header("X-Request-Id", "corr-504")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(jsonPath("$.traceId").value("corr-504"));
+    }
+
+    @Test
+    void correlacion_se_conserva_en_error_del_ws() throws Exception {
+        TicketQueryTool roto = (key, traceId) -> {
+            throw new com.pagaduriasintetica.worker.agent.exception.TicketWsException("WS caido");
+        };
+        mvc(roto).perform(post(URL)
+                        .header("X-Correlation-Id", "corr-502")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("WS_ERROR"))
+                .andExpect(jsonPath("$.traceId").value("corr-502"));
+    }
+
+    @Test
+    void x_correlation_id_gana_sobre_x_request_id() throws Exception {
+        mvc().perform(post(URL)
+                        .header("X-Correlation-Id", "corr-gana")
+                        .header("X-Request-Id", "request-pierde")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.traceId").value("corr-gana"));
+    }
+
+    @Test
+    void sin_cabeceras_se_genera_una_correlacion() throws Exception {
+        mvc().perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
 }
