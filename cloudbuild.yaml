@@ -1,0 +1,154 @@
+# =============================================================================
+# Cloud Build del Worker LNB (PoC -> DEV)
+#
+# ESQUELETO DECLARATIVO: este pipeline NO se ha ejecutado contra DEV todavia.
+# Los valores de infraestructura salen de lnb-docs/AMBIENTE_DEV_LNB.md:
+#   - proyecto DEV:   proy-comercial-dev-lnb
+#   - region:         us-central1
+#   - Artifact Registry (Docker): cloud-run-source-deploy
+#   - SA de build:    sa-build-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com
+#   - SA de ejecucion: sa-run-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com
+#   - Direct VPC:     vpc-comercial-dev-lnb-1 / subnet-comercial-dev-lnb-1
+#
+# Flujo: test -> build de imagen -> push a Artifact Registry -> deploy en Cloud Run privado.
+#
+# SECRETOS: este archivo NO contiene valores ni inventa nombres de secretos. Los secretos de
+# runtime se inyectan por REFERENCIA desde Secret Manager; el nombre real lo confirma el
+# responsable y se agrega en el bloque TODO del paso de deploy. Mientras no exista, el Worker
+# arranca con los componentes MOCK/FIXTURE y las funciones que requieren credenciales quedan
+# no disponibles.
+# =============================================================================
+
+substitutions:
+  _REGION: us-central1
+  _AR_REPO: cloud-run-source-deploy
+  _IMAGE: worker-poc
+  # Nombre propuesto, alineado con spring.application.name y la imagen local. Confirmar con
+  # integracion antes del primer deploy para no crear un servicio con un nombre distinto.
+  _SERVICE: worker-poc
+  _RUN_SA: sa-run-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com
+  _VPC: vpc-comercial-dev-lnb-1
+  _SUBNET: subnet-comercial-dev-lnb-1
+
+  # Perfil de ejecucion. Los defaults de application.properties son MOCK/FIXTURE: el deploy no
+  # presenta un componente simulado como real. Para activar Vertex real o el WS de Carlos hay
+  # que cambiar estas sustituciones de forma deliberada (ver TODOs al final).
+  _GOVERNOR_MODE: MOCK
+  _INGEST_MODE: PUSH
+  _STORE_MODE: MEMORY
+  _REPORTER_MODE: MOCK
+  _TICKET_AGENT_MODE: FIXTURE
+  _TICKET_AGENT_MODEL_CLIENT: FAKE
+  # SYNTHETIC hasta que exista el WS autorizado; no se afirma procedencia REAL por desplegar.
+  _TICKET_AGENT_PROVENANCE: SYNTHETIC
+  _LOG_LEVEL_ROOT: INFO
+  _LOG_LEVEL_WORKER: INFO
+
+# La SA de build publica en Artifact Registry y despliega segun AMBIENTE_DEV_LNB.md.
+# Formato completo requerido por Cloud Build. Requiere que el disparador pueda actuar como
+# esta cuenta (iam.serviceAccounts.actAs).
+serviceAccount: 'projects/proy-comercial-dev-lnb/serviceAccounts/sa-build-agentes-dev-lnb@proy-comercial-dev-lnb.iam.gserviceaccount.com'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s
+
+steps:
+  # ---------------------------------------------------------------------------
+  # 1) Pruebas. Se ejecutan con el wrapper en la MISMA base JDK que el Dockerfile
+  #    (fijada por digest) para que la version de Java/Maven no derive de otra imagen.
+  #    El context de Cloud Build es el repo; el Dockerfile excluye target/ y .git por
+  #    .dockerignore, pero el paso de test si necesita src/ completo.
+  # ---------------------------------------------------------------------------
+  - id: test
+    name: 'eclipse-temurin:21.0.6_7-jdk-jammy@sha256:42cafd5432c206408a7dbbc2a1d9523cd6277a5e1f618c379877002afd1bc0e2'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        chmod +x mvnw
+        ./mvnw -B -ntp test
+    env:
+      - 'MAVEN_OPTS=-Xmx512m -XX:MaxMetaspaceSize=384m'
+
+  # ---------------------------------------------------------------------------
+  # 2) Imagen. Se etiqueta con BUILD_ID (disponible tambien en builds manuales;
+  #    SHORT_SHA solo existe en builds disparados por trigger) y con latest.
+  #    TODO: fijar los builders por digest cuando el pipeline quede estable.
+  # ---------------------------------------------------------------------------
+  - id: build
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - '--tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${BUILD_ID}'
+      - '--tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest'
+      - '.'
+
+  # ---------------------------------------------------------------------------
+  # 3) Push a Artifact Registry. Cloud Build ya esta autenticado contra el repo
+  #    del mismo proyecto; no se usan credenciales propias ni docker login.
+  # ---------------------------------------------------------------------------
+  - id: push
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${BUILD_ID}'
+
+  - id: push-latest
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest'
+
+  # ---------------------------------------------------------------------------
+  # 4) Deploy en Cloud Run privado:
+  #    - --no-allow-unauthenticated: sin acceso publico; el push de Pub/Sub requiere OIDC
+  #      con run.invoker (pendiente de JD, ver README).
+  #    - Direct VPC egress a la subred DEV para la salida privada (Sybase futuro).
+  #    - timeout 60s alineado con app.pubsub.ack-deadline=60s.
+  #    - startup probe sobre la sonda de readiness que ya expone Actuator.
+  # ---------------------------------------------------------------------------
+  - id: deploy
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '${_SERVICE}'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${BUILD_ID}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--no-allow-unauthenticated'
+      - '--port=8080'
+      - '--service-account=${_RUN_SA}'
+      - '--network=${_VPC}'
+      - '--subnet=${_SUBNET}'
+      - '--vpc-egress=private-ranges-only'
+      - '--timeout=60s'
+      - '--startup-probe=httpGet.path=/actuator/health/readiness,initialDelaySeconds=5,timeoutSeconds=3,periodSeconds=5,failureThreshold=12'
+      # Una sola linea: gcloud separa por comas y el plegado de YAML insertaria espacios que
+      # romperian el nombre de la variable siguiente.
+      - '--set-env-vars=APP_GOVERNOR_MODE=${_GOVERNOR_MODE},APP_INGEST_MODE=${_INGEST_MODE},APP_STORE_MODE=${_STORE_MODE},APP_REPORTER_MODE=${_REPORTER_MODE},APP_VERTEX_PROJECT_ID=${PROJECT_ID},APP_TICKET_AGENT_MODE=${_TICKET_AGENT_MODE},APP_TICKET_AGENT_MODEL_CLIENT=${_TICKET_AGENT_MODEL_CLIENT},APP_TICKET_AGENT_PROVENANCE=${_TICKET_AGENT_PROVENANCE},LOG_LEVEL_ROOT=${_LOG_LEVEL_ROOT},LOG_LEVEL_WORKER=${_LOG_LEVEL_WORKER}'
+      - '--quiet'
+    # TODO(secretos): cuando el responsable confirme los nombres reales en Secret Manager,
+    # agregar al deploy UNA linea --set-secrets por secreto, referenciando el nombre real
+    # (nunca el valor) y el nombre de variable que el codigo ya espera:
+    #
+    #   --set-secrets=SYBASE_PASSWORD=<NOMBRE_REAL_EN_SECRET_MANAGER>:latest
+    #   --set-secrets=REPORT_API_TOKEN=<NOMBRE_REAL_EN_SECRET_MANAGER>:latest
+    #
+    # No se agrega ahora porque no hay nombre confirmado: inventarlo haria fallar el deploy o,
+    # peor, dejaria el servicio apuntando a un secreto ajeno. En Cloud Run la identidad usa ADC;
+    # no se monta GOOGLE_APPLICATION_CREDENTIALS.
+    #
+    # TODO(WS real): cuando Carlos entregue verbo/ruta, contrato de campos, autenticacion y
+    # semantica NOT_AWARDED, cambiar _TICKET_AGENT_MODE a HTTP, agregar
+    # APP_TICKET_AGENT_BASE_URL apuntando al WS autorizado y evaluar _TICKET_AGENT_PROVENANCE.
+    #
+    # TODO(Vertex real): cambiar _GOVERNOR_MODE/_TICKET_AGENT_MODEL_CLIENT a VERTEX y fijar
+    # APP_VERTEX_MODEL/APP_TICKET_AGENT_MODEL al modelo vigente. gemini-2.5-flash esta retirado
+    # y el agente de boleto usa gemini-3.8-flash en locations/global (us-central1 da 404).
+    #
+    # TODO(ingress): hoy se deja el ingress por defecto y la proteccion es autenticacion. Si se
+    # restringe a --ingress=internal hay que confirmar antes que el push de Pub/Sub pueda llegar.
