@@ -11,10 +11,11 @@ public record TicketLookupResponse(
         PrizeInfo prize,
         String collectionStatus,
         String provenance,
+        String source,
         String databaseSource,
         String message
 ) {
-    public static TicketLookupResponse winner(String ticketNumber, String amount, String currency, String category, String provenance, String source) {
+    public static TicketLookupResponse winner(String ticketNumber, String amount, String currency, String category, String provenance, String source, String databaseSource) {
         return new TicketLookupResponse(
                 true,
                 true,
@@ -23,11 +24,12 @@ public record TicketLookupResponse(
                 "PENDING",
                 provenance,
                 source,
+                databaseSource,
                 "Boleto encontrado y premiado"
         );
     }
 
-    public static TicketLookupResponse notAwarded(String ticketNumber, String provenance, String source) {
+    public static TicketLookupResponse notAwarded(String ticketNumber, String provenance, String source, String databaseSource) {
         return new TicketLookupResponse(
                 true,
                 false,
@@ -36,11 +38,12 @@ public record TicketLookupResponse(
                 null,
                 provenance,
                 source,
+                databaseSource,
                 "Boleto sin premio asignado"
         );
     }
 
-    public static TicketLookupResponse notFound(String ticketNumber, String provenance, String source) {
+    public static TicketLookupResponse notFound(String ticketNumber, String provenance, String source, String databaseSource) {
         return new TicketLookupResponse(
                 false,
                 false,
@@ -49,7 +52,8 @@ public record TicketLookupResponse(
                 null,
                 provenance,
                 source,
-                "Boleto no encontrado en los registros de lotería"
+                databaseSource,
+                "Boleto no encontrado"
         );
     }
 }

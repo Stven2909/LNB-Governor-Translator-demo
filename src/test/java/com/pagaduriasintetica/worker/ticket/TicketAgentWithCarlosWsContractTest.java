@@ -23,11 +23,11 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Prueba de integración que demuestra el ciclo completo:
- * Agente IA (Steven) -> Herramienta HTTP -> Web Service de Carlos (POST /api/v1/tickets/lookup).
- * Demuestra que el WS de Carlos satisface al 100% el contrato del agente con trazabilidad honesta.
+ * Prueba de contrato local entre el Agente (con cliente determinista FAKE) y el WS de Carlos.
+ * Verifica que el shape devuelto por el WS es 100% compatible con HttpTicketQueryTool.
+ * NOTA: Esta es una prueba de contrato local, NO una prueba de integración con Sybase real.
  */
-class TicketAgentWithCarlosWsIntegrationTest {
+class TicketAgentWithCarlosWsContractTest {
 
     private static HttpServer server;
     private static int port;
@@ -36,7 +36,8 @@ class TicketAgentWithCarlosWsIntegrationTest {
     @BeforeAll
     static void startServer() throws IOException {
         SybaseTicketProperties props = new SybaseTicketProperties();
-        props.setEnabled(false); // Modo offline / sin conexión VPN directa
+        props.setEnabled(false); // Modo offline
+        props.setSeedEnabled(true); // Activar fixture local de pruebas
         props.setDefaultProvenance("SYNTHETIC");
         lookupService = new TicketLookupService(new SybaseTicketRepository(props));
 
@@ -60,21 +61,21 @@ class TicketAgentWithCarlosWsIntegrationTest {
                     json = String.format(
                             "{\"found\":true,\"awarded\":true,\"ticketNumber\":\"%s\"," +
                             "\"prize\":{\"amount\":\"%s\",\"currency\":\"%s\",\"category\":\"%s\"}," +
-                            "\"collectionStatus\":\"%s\",\"provenance\":\"%s\"}",
+                            "\"collectionStatus\":\"%s\",\"provenance\":\"%s\",\"source\":\"%s\"}",
                             res.ticketNumber(), res.prize().amount(), res.prize().currency(),
-                            res.prize().category(), res.collectionStatus(), res.provenance()
+                            res.prize().category(), res.collectionStatus(), res.provenance(), res.source()
                     );
                 } else if (res.found()) {
                     json = String.format(
                             "{\"found\":true,\"awarded\":false,\"ticketNumber\":\"%s\"," +
-                            "\"prize\":null,\"collectionStatus\":null,\"provenance\":\"%s\"}",
-                            res.ticketNumber(), res.provenance()
+                            "\"provenance\":\"%s\",\"source\":\"%s\"}",
+                            res.ticketNumber(), res.provenance(), res.source()
                     );
                 } else {
                     json = String.format(
                             "{\"found\":false,\"awarded\":false,\"ticketNumber\":\"%s\"," +
-                            "\"prize\":null,\"collectionStatus\":null,\"provenance\":\"%s\"}",
-                            res.ticketNumber(), res.provenance()
+                            "\"provenance\":\"%s\",\"source\":\"%s\"}",
+                            res.ticketNumber(), res.provenance(), res.source()
                     );
                 }
 
@@ -119,12 +120,12 @@ class TicketAgentWithCarlosWsIntegrationTest {
     }
 
     @Test
-    @DisplayName("Integración completa: Agente consulta WS de Carlos y obtiene boleto ganador con procedencia SYNTHETIC (offline)")
+    @DisplayName("Prueba de contrato: Agente consulta WS y valida compatibilidad con boleto ganador")
     void agenteConsultaWsDeCarlosConExito() {
         TicketAgent agent = buildAgent();
         TicketKey key = new TicketKey("LNB", "2026-10-15", "0012345678", "A", "5");
 
-        TicketQueryResult result = agent.process(key, "trace-integral-carlos-001");
+        TicketQueryResult result = agent.process(key, "trace-contract-carlos-001");
 
         assertNotNull(result);
         assertEquals(TicketLookupStatus.FOUND, result.result());
@@ -133,16 +134,16 @@ class TicketAgentWithCarlosWsIntegrationTest {
         assertEquals("USD", result.prize().currency());
         assertEquals("CASH", result.prize().category());
         assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
-        assertEquals("trace-integral-carlos-001", result.traceId());
+        assertEquals("trace-contract-carlos-001", result.traceId());
     }
 
     @Test
-    @DisplayName("Integración: Boleto no premiado consultado por el agente a través del WS de Carlos")
+    @DisplayName("Prueba de contrato: Boleto no premiado consultado por el agente")
     void agenteConsultaBoletoNoPremiado() {
         TicketAgent agent = buildAgent();
         TicketKey key = new TicketKey("LNB", "2026-10-15", "0011111111", null, null);
 
-        TicketQueryResult result = agent.process(key, "trace-integral-carlos-002");
+        TicketQueryResult result = agent.process(key, "trace-contract-carlos-002");
 
         assertNotNull(result);
         assertEquals(TicketLookupStatus.NOT_AWARDED, result.result());
@@ -151,12 +152,12 @@ class TicketAgentWithCarlosWsIntegrationTest {
     }
 
     @Test
-    @DisplayName("Integración: Boleto inexistente consultado por el agente a través del WS de Carlos")
+    @DisplayName("Prueba de contrato: Boleto inexistente consultado por el agente")
     void agenteConsultaBoletoNoEncontrado() {
         TicketAgent agent = buildAgent();
         TicketKey key = new TicketKey("LNB", "2026-10-15", "9999999999", null, null);
 
-        TicketQueryResult result = agent.process(key, "trace-integral-carlos-003");
+        TicketQueryResult result = agent.process(key, "trace-contract-carlos-003");
 
         assertNotNull(result);
         assertEquals(TicketLookupStatus.NOT_FOUND, result.result());

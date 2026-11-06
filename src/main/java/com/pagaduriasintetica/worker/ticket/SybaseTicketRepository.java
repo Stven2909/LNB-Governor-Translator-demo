@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,15 +45,25 @@ public class SybaseTicketRepository {
                 String driverClass = properties.getDriverClassName();
                 String jdbcUrl = properties.getUrl();
 
-                // Verificar si jConnect (com.sybase.jdbc4.jdbc.SybDriver) está disponible;
-                // si no, alternar automáticamente al driver abierto jTDS para Sybase ASE
+                // 1. Intentar cargar el driver oficial jConnect (com.sybase.jdbc4.jdbc.SybDriver)
                 try {
                     Class.forName(driverClass);
+                    log.info("Driver oficial jConnect [{}] detectado en classpath", driverClass);
                 } catch (ClassNotFoundException e) {
-                    log.info("Driver jConnect ({}) no disponible en classpath. Utilizando driver jTDS (net.sourceforge.jtds.jdbc.Driver)", driverClass);
-                    driverClass = "net.sourceforge.jtds.jdbc.Driver";
-                    if (jdbcUrl.startsWith("jdbc:sybase:Tds:")) {
-                        jdbcUrl = jdbcUrl.replace("jdbc:sybase:Tds:", "jdbc:jtds:sybase://");
+                    // 2. Si no está jconn4, intentar con jTDS (si está presente en classpath)
+                    try {
+                        Class.forName("net.sourceforge.jtds.jdbc.Driver");
+                        log.warn("Driver jConnect no disponible; alternando a driver jTDS (net.sourceforge.jtds.jdbc.Driver)");
+                        driverClass = "net.sourceforge.jtds.jdbc.Driver";
+                        if (jdbcUrl.startsWith("jdbc:sybase:Tds:")) {
+                            jdbcUrl = jdbcUrl.replace("jdbc:sybase:Tds:", "jdbc:jtds:sybase://");
+                        }
+                    } catch (ClassNotFoundException ex) {
+                        String err = "Driver JDBC no encontrado. Instale jconn4.jar autorizado mediante: " +
+                                     "mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar";
+                        lastError.set(err);
+                        log.error(err);
+                        return;
                     }
                 }
 
@@ -62,7 +74,7 @@ public class SybaseTicketRepository {
                 config.setPassword(properties.getPassword());
                 config.setMaximumPoolSize(properties.getPoolSize());
                 config.setConnectionTimeout(properties.getConnectionTimeout().toMillis());
-                config.setInitializationFailTimeout(1000); // no bloquear arranque si no hay VPN activa
+                config.setInitializationFailTimeout(1000); // fail-fast si no hay VPN activa
                 config.setPoolName("SybaseTicketPool-Carlos");
 
                 HikariDataSource ds = new HikariDataSource(config);
@@ -83,7 +95,7 @@ public class SybaseTicketRepository {
     public TicketLookupResponse findTicket(String lotteryCode, String drawNumber, String ticketNumber) {
         lastCheck.set(Instant.now());
 
-        // Intentar consulta JDBC real si el pool está operativo
+        // 1. Intentar consulta JDBC real si el pool está operativo
         DataSource ds = dataSourceRef.get();
         if (ds != null && poolInitialized.get()) {
             try (Connection conn = ds.getConnection()) {
@@ -98,18 +110,21 @@ public class SybaseTicketRepository {
                         if (rs.next()) {
                             boolean awarded = rs.getBoolean("awarded");
                             if (awarded) {
+                                String normalizedAmount = normalizeAmount(rs.getString("prize_amount"));
                                 return TicketLookupResponse.winner(
                                         rs.getString("ticket_number"),
-                                        rs.getString("prize_amount"),
+                                        normalizedAmount,
                                         rs.getString("prize_currency"),
                                         rs.getString("prize_category"),
                                         "REAL",
+                                        "SYBASE",
                                         "Sybase ASE (" + properties.getUrl() + ")"
                                 );
                             } else {
                                 return TicketLookupResponse.notAwarded(
                                         rs.getString("ticket_number"),
                                         "REAL",
+                                        "SYBASE",
                                         "Sybase ASE (" + properties.getUrl() + ")"
                                 );
                             }
@@ -117,6 +132,7 @@ public class SybaseTicketRepository {
                             return TicketLookupResponse.notFound(
                                     ticketNumber,
                                     "REAL",
+                                    "SYBASE",
                                     "Sybase ASE (" + properties.getUrl() + ")"
                             );
                         }
@@ -124,41 +140,57 @@ public class SybaseTicketRepository {
                 }
             } catch (SQLException e) {
                 lastError.set("Fallo al ejecutar consulta en Sybase: " + e.getMessage());
-                log.warn("Consulta JDBC a Sybase falló, activando fixture de desarrollo: {}", e.getMessage());
+                log.warn("Consulta JDBC a Sybase falló: {}", e.getMessage());
             }
         }
 
-        // Semilla autorizada de referencia oficial LNB (Caso 1 de Alex y Danny: boleto de $50 USD)
-        return resolveAuthorizedSeed(lotteryCode, drawNumber, ticketNumber);
+        // 2. Comportamiento Fail Closed vs Semilla de pruebas
+        if (properties.isSeedEnabled()) {
+            // Solo si app.sybase.ticket.seed-enabled=true (entorno local de pruebas)
+            return resolveAuthorizedSeed(lotteryCode, drawNumber, ticketNumber);
+        }
+
+        // FAIL CLOSED: Si el pool no está activo y la semilla está deshabilitada (default)
+        throw new SybaseDatabaseUnavailableException(
+                "Pool Sybase no disponible (poolActive=false). Detalle: " + lastError.get()
+        );
     }
 
     private TicketLookupResponse resolveAuthorizedSeed(String lotteryCode, String drawNumber, String ticketNumber) {
-        String sourceInfo = "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: " +
-                (poolInitialized.get() ? "activo" : "sin conexión VPN") + "]";
-
-        // Honestidad de procedencia: si no hubo conexión física a Sybase, la procedencia es SYNTHETIC
-        String honestProvenance = poolInitialized.get() ? "REAL" : "SYNTHETIC";
+        String sourceInfo = "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexión VPN]";
 
         // Caso no encontrado
         if ("9999999999".equals(ticketNumber)) {
-            return TicketLookupResponse.notFound(ticketNumber, honestProvenance, sourceInfo);
+            return TicketLookupResponse.notFound(ticketNumber, "SYNTHETIC", "SEED", sourceInfo);
         }
 
         // Caso no premiado
         if ("0011111111".equals(ticketNumber)) {
-            return TicketLookupResponse.notAwarded(ticketNumber, honestProvenance, sourceInfo);
+            return TicketLookupResponse.notAwarded(ticketNumber, "SYNTHETIC", "SEED", sourceInfo);
         }
 
-        // Caso 1: Boleto ganador de referencia oficial ($50 USD)
-        // Acepta '0012345678' o cualquier clave propuesta por el Equipo 2
+        // Caso 1: Boleto ganador de referencia oficial ($50.00 USD)
         return TicketLookupResponse.winner(
                 ticketNumber != null && !ticketNumber.isBlank() ? ticketNumber : "0012345678",
                 "50.00",
                 "USD",
                 "CASH",
-                honestProvenance,
+                "SYNTHETIC",
+                "SEED",
                 sourceInfo
         );
+    }
+
+    private static String normalizeAmount(String amountStr) {
+        if (amountStr == null || amountStr.isBlank()) {
+            return "0.00";
+        }
+        try {
+            BigDecimal bd = new BigDecimal(amountStr.trim());
+            return bd.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
+        } catch (Exception e) {
+            return amountStr.trim();
+        }
     }
 
     public boolean isPoolInitialized() {

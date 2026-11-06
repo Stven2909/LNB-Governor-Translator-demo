@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class TicketLookupController {
         String resolvedTraceId = CorrelationId.resolve(httpRequest);
         String correlationId = StringUtils.hasText(resolvedTraceId) ? resolvedTraceId : UUID.randomUUID().toString();
 
-        // Ecoar headers de correlacion distribuida requeridos por el Gateway y Agente
+        // Ecoar obligatoriamente headers de correlación distribuida
         httpResponse.setHeader("X-Correlation-Id", correlationId);
         httpResponse.setHeader("X-Request-Id", correlationId);
 
@@ -55,11 +56,19 @@ public class TicketLookupController {
         log.info("[correlationId={}] Procesando consulta de boleto: lottery={}, draw={}, ticket={}",
                 correlationId, key.lotteryCode(), key.drawNumber(), key.ticketNumber());
 
-        TicketLookupResponse response = service.lookup(key);
-        log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
-                correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.databaseSource());
-
-        return ResponseEntity.ok(response);
+        try {
+            TicketLookupResponse response = service.lookup(key);
+            log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
+                    correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.source());
+            return ResponseEntity.ok(response);
+        } catch (SybaseDatabaseUnavailableException e) {
+            log.error("[correlationId={}] Fallo seguro (Fail Closed): {}", correlationId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                    "error", "DATABASE_UNAVAILABLE",
+                    "message", e.getMessage(),
+                    "correlationId", correlationId
+            ));
+        }
     }
 
     @GetMapping("/status")

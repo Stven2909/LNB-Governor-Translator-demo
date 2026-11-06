@@ -16,24 +16,55 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class TicketLookupControllerTest {
 
-    private MockMvc mockMvc;
+    private MockMvc mockMvcWithSeed;
+    private MockMvc mockMvcFailClosed;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        SybaseTicketProperties props = new SybaseTicketProperties();
-        props.setEnabled(false); // Deshabilitar pool real en pruebas unitarias para usar fixture
-        props.setDefaultProvenance("SYNTHETIC");
+        // 1. Controller con seed habilitada para pruebas locales aisladas
+        SybaseTicketProperties propsSeed = new SybaseTicketProperties();
+        propsSeed.setEnabled(false);
+        propsSeed.setSeedEnabled(true);
+        propsSeed.setDefaultProvenance("SYNTHETIC");
 
-        SybaseTicketRepository repository = new SybaseTicketRepository(props);
-        TicketLookupService service = new TicketLookupService(repository);
-        TicketLookupController controller = new TicketLookupController(service);
+        SybaseTicketRepository repoSeed = new SybaseTicketRepository(propsSeed);
+        TicketLookupService serviceSeed = new TicketLookupService(repoSeed);
+        TicketLookupController controllerSeed = new TicketLookupController(serviceSeed);
+        this.mockMvcWithSeed = MockMvcBuilders.standaloneSetup(controllerSeed).build();
 
-        this.mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        // 2. Controller en modo Fail Closed (seed-enabled=false, pool inactive)
+        SybaseTicketProperties propsFailClosed = new SybaseTicketProperties();
+        propsFailClosed.setEnabled(false);
+        propsFailClosed.setSeedEnabled(false);
+
+        SybaseTicketRepository repoFailClosed = new SybaseTicketRepository(propsFailClosed);
+        TicketLookupService serviceFailClosed = new TicketLookupService(repoFailClosed);
+        TicketLookupController controllerFailClosed = new TicketLookupController(serviceFailClosed);
+        this.mockMvcFailClosed = MockMvcBuilders.standaloneSetup(controllerFailClosed).build();
     }
 
     @Test
-    @DisplayName("Caso 1 LNB: Boleto ganador devuelve premio de $50 USD, correlación y procedencia honesta")
+    @DisplayName("Fail Closed: responde 503 SERVICE_UNAVAILABLE si el pool no está activo y seed-enabled=false")
+    void failClosed_devuelve503SiNoHayConexionNiSemilla() throws Exception {
+        Map<String, Object> body = Map.of(
+                "lotteryCode", "LNB",
+                "drawNumber", "2026-10-15",
+                "ticketNumber", "0012345678"
+        );
+
+        mockMvcFailClosed.perform(post("/api/v1/tickets/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "trace-fail-closed-001")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("X-Correlation-Id", "trace-fail-closed-001"))
+                .andExpect(jsonPath("$.error").value("DATABASE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.correlationId").value("trace-fail-closed-001"));
+    }
+
+    @Test
+    @DisplayName("Caso 1 LNB: Boleto ganador en modo seed devuelve $50.00 USD, SYNTHETIC, SEED y correlación")
     void caso1_boletoGanadorDevuelvePremio50Usd() throws Exception {
         Map<String, Object> body = Map.of(
                 "lotteryCode", "LNB",
@@ -43,7 +74,7 @@ class TicketLookupControllerTest {
                 "checkDigit", "5"
         );
 
-        mockMvc.perform(post("/api/v1/tickets/lookup")
+        mockMvcWithSeed.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Correlation-Id", "smoke-test-carlos-001")
                         .content(objectMapper.writeValueAsString(body)))
@@ -57,7 +88,8 @@ class TicketLookupControllerTest {
                 .andExpect(jsonPath("$.prize.currency").value("USD"))
                 .andExpect(jsonPath("$.prize.category").value("CASH"))
                 .andExpect(jsonPath("$.collectionStatus").value("PENDING"))
-                .andExpect(jsonPath("$.provenance").value("SYNTHETIC"));
+                .andExpect(jsonPath("$.provenance").value("SYNTHETIC"))
+                .andExpect(jsonPath("$.source").value("SEED"));
     }
 
     @Test
@@ -71,7 +103,7 @@ class TicketLookupControllerTest {
                 )
         );
 
-        mockMvc.perform(post("/api/v1/tickets/lookup")
+        mockMvcWithSeed.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Request-Id", "smoke-test-carlos-002")
                         .content(objectMapper.writeValueAsString(body)))
@@ -90,7 +122,7 @@ class TicketLookupControllerTest {
                 "ticketNumber", "0011111111"
         );
 
-        mockMvc.perform(post("/api/v1/tickets/lookup")
+        mockMvcWithSeed.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Correlation-Id", "corr-not-awarded")
                         .content(objectMapper.writeValueAsString(body)))
@@ -110,7 +142,7 @@ class TicketLookupControllerTest {
                 "ticketNumber", "9999999999"
         );
 
-        mockMvc.perform(post("/api/v1/tickets/lookup")
+        mockMvcWithSeed.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
@@ -125,7 +157,7 @@ class TicketLookupControllerTest {
                 "lotteryCode", "LNB"
         );
 
-        mockMvc.perform(post("/api/v1/tickets/lookup")
+        mockMvcWithSeed.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest())
@@ -135,7 +167,7 @@ class TicketLookupControllerTest {
     @Test
     @DisplayName("Endpoint de estado del pool devuelve status de Sybase")
     void caso_statusPoolDevuelveInformacion() throws Exception {
-        mockMvc.perform(get("/api/v1/tickets/status"))
+        mockMvcWithSeed.perform(get("/api/v1/tickets/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastCheck").exists());
     }
