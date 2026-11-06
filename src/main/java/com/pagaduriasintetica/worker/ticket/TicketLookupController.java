@@ -3,6 +3,7 @@ package com.pagaduriasintetica.worker.ticket;
 import com.pagaduriasintetica.worker.agent.CorrelationId;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -27,31 +28,36 @@ public class TicketLookupController {
     @PostMapping("/lookup")
     public ResponseEntity<?> lookup(
             @RequestBody TicketLookupRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
 
         String resolvedTraceId = CorrelationId.resolve(httpRequest);
-        String traceId = StringUtils.hasText(resolvedTraceId) ? resolvedTraceId : UUID.randomUUID().toString();
+        String correlationId = StringUtils.hasText(resolvedTraceId) ? resolvedTraceId : UUID.randomUUID().toString();
+
+        // Ecoar headers de correlacion distribuida requeridos por el Gateway y Agente
+        httpResponse.setHeader("X-Correlation-Id", correlationId);
+        httpResponse.setHeader("X-Request-Id", correlationId);
 
         if (request == null ||
                 !StringUtils.hasText(request.getLotteryCode()) ||
                 !StringUtils.hasText(request.getDrawNumber()) ||
                 !StringUtils.hasText(request.getTicketNumber())) {
 
-            log.warn("[traceId={}] Consulta de boleto rechazada por datos incompletos", traceId);
+            log.warn("[correlationId={}] Consulta de boleto rechazada por datos incompletos", correlationId);
             return ResponseEntity.badRequest().body(Map.of(
-                    "traceId", traceId,
+                    "correlationId", correlationId,
                     "code", "INVALID_INPUT",
                     "message", "Campos obligatorios requeridos: lotteryCode, drawNumber, ticketNumber"
             ));
         }
 
         TicketKey key = request.toTicketKey();
-        log.info("[traceId={}] Procesando consulta de boleto: lottery={}, draw={}, ticket={}",
-                traceId, key.lotteryCode(), key.drawNumber(), key.ticketNumber());
+        log.info("[correlationId={}] Procesando consulta de boleto: lottery={}, draw={}, ticket={}",
+                correlationId, key.lotteryCode(), key.drawNumber(), key.ticketNumber());
 
         TicketLookupResponse response = service.lookup(key);
-        log.info("[traceId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}",
-                traceId, key.ticketNumber(), response.found(), response.awarded(), response.provenance());
+        log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
+                correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.databaseSource());
 
         return ResponseEntity.ok(response);
     }

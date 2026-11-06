@@ -24,7 +24,7 @@ public class SybaseTicketRepository {
     private final SybaseTicketProperties properties;
     private final AtomicReference<DataSource> dataSourceRef = new AtomicReference<>();
     private final AtomicBoolean poolInitialized = new AtomicBoolean(false);
-    private final AtomicReference<String> lastError = new AtomicReference<>("Pool no inicializado todavia");
+    private final AtomicReference<String> lastError = new AtomicReference<>("Pool no inicializado todavía");
     private final AtomicReference<Instant> lastCheck = new AtomicReference<>(Instant.now());
 
     public SybaseTicketRepository(SybaseTicketProperties properties) {
@@ -34,20 +34,35 @@ public class SybaseTicketRepository {
 
     private void initPoolAsync() {
         if (!properties.isEnabled()) {
-            lastError.set("Sybase JDBC deshabilitado por configuracion (app.sybase.ticket.enabled=false)");
+            lastError.set("Sybase JDBC deshabilitado por configuración (app.sybase.ticket.enabled=false)");
             return;
         }
 
         Thread.ofVirtual().start(() -> {
             try {
+                String driverClass = properties.getDriverClassName();
+                String jdbcUrl = properties.getUrl();
+
+                // Verificar si jConnect (com.sybase.jdbc4.jdbc.SybDriver) está disponible;
+                // si no, alternar automáticamente al driver abierto jTDS para Sybase ASE
+                try {
+                    Class.forName(driverClass);
+                } catch (ClassNotFoundException e) {
+                    log.info("Driver jConnect ({}) no disponible en classpath. Utilizando driver jTDS (net.sourceforge.jtds.jdbc.Driver)", driverClass);
+                    driverClass = "net.sourceforge.jtds.jdbc.Driver";
+                    if (jdbcUrl.startsWith("jdbc:sybase:Tds:")) {
+                        jdbcUrl = jdbcUrl.replace("jdbc:sybase:Tds:", "jdbc:jtds:sybase://");
+                    }
+                }
+
                 HikariConfig config = new HikariConfig();
-                config.setJdbcUrl(properties.getUrl());
-                config.setDriverClassName(properties.getDriverClassName());
+                config.setJdbcUrl(jdbcUrl);
+                config.setDriverClassName(driverClass);
                 config.setUsername(properties.getUsername());
                 config.setPassword(properties.getPassword());
                 config.setMaximumPoolSize(properties.getPoolSize());
                 config.setConnectionTimeout(properties.getConnectionTimeout().toMillis());
-                config.setInitializationFailTimeout(1000); // no bloquear arranque si Sybase esta fuera de red
+                config.setInitializationFailTimeout(1000); // no bloquear arranque si no hay VPN activa
                 config.setPoolName("SybaseTicketPool-Carlos");
 
                 HikariDataSource ds = new HikariDataSource(config);
@@ -55,9 +70,9 @@ public class SybaseTicketRepository {
                 poolInitialized.set(true);
                 lastError.set(null);
                 lastCheck.set(Instant.now());
-                log.info("Pool HikariCP para Sybase configurado exitosamente hacia: {}", properties.getUrl());
+                log.info("Pool HikariCP configurado exitosamente con driver [{}] hacia: {}", driverClass, jdbcUrl);
             } catch (Exception e) {
-                String msg = "Aviso de infraestructura: Sybase DEV (" + properties.getUrl() + ") no alcanzable en este entorno (" + e.getMessage() + ")";
+                String msg = "Infraestructura Sybase DEV no alcanzable en este entorno (192.168.2.14:5000): " + e.getMessage();
                 lastError.set(msg);
                 lastCheck.set(Instant.now());
                 log.warn(msg);
@@ -68,7 +83,7 @@ public class SybaseTicketRepository {
     public TicketLookupResponse findTicket(String lotteryCode, String drawNumber, String ticketNumber) {
         lastCheck.set(Instant.now());
 
-        // Intentar consulta JDBC real si el pool esta operativo
+        // Intentar consulta JDBC real si el pool está operativo
         DataSource ds = dataSourceRef.get();
         if (ds != null && poolInitialized.get()) {
             try (Connection conn = ds.getConnection()) {
@@ -109,7 +124,7 @@ public class SybaseTicketRepository {
                 }
             } catch (SQLException e) {
                 lastError.set("Fallo al ejecutar consulta en Sybase: " + e.getMessage());
-                log.warn("Consulta JDBC a Sybase fallo, activando semilla autorizada: {}", e.getMessage());
+                log.warn("Consulta JDBC a Sybase falló, activando fixture de desarrollo: {}", e.getMessage());
             }
         }
 
@@ -118,27 +133,30 @@ public class SybaseTicketRepository {
     }
 
     private TicketLookupResponse resolveAuthorizedSeed(String lotteryCode, String drawNumber, String ticketNumber) {
-        String sourceInfo = "Fuente autorizada LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: " +
-                (poolInitialized.get() ? "activo" : "pendiente de VPN/red") + "]";
+        String sourceInfo = "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: " +
+                (poolInitialized.get() ? "activo" : "sin conexión VPN") + "]";
+
+        // Honestidad de procedencia: si no hubo conexión física a Sybase, la procedencia es SYNTHETIC
+        String honestProvenance = poolInitialized.get() ? "REAL" : "SYNTHETIC";
 
         // Caso no encontrado
         if ("9999999999".equals(ticketNumber)) {
-            return TicketLookupResponse.notFound(ticketNumber, properties.getDefaultProvenance(), sourceInfo);
+            return TicketLookupResponse.notFound(ticketNumber, honestProvenance, sourceInfo);
         }
 
         // Caso no premiado
         if ("0011111111".equals(ticketNumber)) {
-            return TicketLookupResponse.notAwarded(ticketNumber, properties.getDefaultProvenance(), sourceInfo);
+            return TicketLookupResponse.notAwarded(ticketNumber, honestProvenance, sourceInfo);
         }
 
-        // Caso 1: Boleto ganador real de referencia oficial ($50 USD)
+        // Caso 1: Boleto ganador de referencia oficial ($50 USD)
         // Acepta '0012345678' o cualquier clave propuesta por el Equipo 2
         return TicketLookupResponse.winner(
                 ticketNumber != null && !ticketNumber.isBlank() ? ticketNumber : "0012345678",
                 "50.00",
                 "USD",
                 "CASH",
-                properties.getDefaultProvenance(),
+                honestProvenance,
                 sourceInfo
         );
     }

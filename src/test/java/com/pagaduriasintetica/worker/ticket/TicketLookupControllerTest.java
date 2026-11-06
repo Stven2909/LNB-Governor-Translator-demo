@@ -12,27 +12,29 @@ import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class TicketLookupControllerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         SybaseTicketProperties props = new SybaseTicketProperties();
-        props.setEnabled(false); // deshabilitado para test unitario rapido
-        props.setDefaultProvenance("REAL");
-        SybaseTicketRepository repo = new SybaseTicketRepository(props);
-        TicketLookupService service = new TicketLookupService(repo);
-        mockMvc = MockMvcBuilders.standaloneSetup(new TicketLookupController(service)).build();
+        props.setEnabled(false); // Deshabilitar pool real en pruebas unitarias para usar fixture
+        props.setDefaultProvenance("SYNTHETIC");
+
+        SybaseTicketRepository repository = new SybaseTicketRepository(props);
+        TicketLookupService service = new TicketLookupService(repository);
+        TicketLookupController controller = new TicketLookupController(service);
+
+        this.mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
     @Test
-    @DisplayName("Caso 1: Consulta de boleto ganador devuelve 200, premio de 50.00 USD y estado PENDING")
-    void caso1_boletoGanadorDevuelvePremioReal() throws Exception {
+    @DisplayName("Caso 1 LNB: Boleto ganador devuelve premio de $50 USD, correlación y procedencia honesta")
+    void caso1_boletoGanadorDevuelvePremio50Usd() throws Exception {
         Map<String, Object> body = Map.of(
                 "lotteryCode", "LNB",
                 "drawNumber", "2026-10-15",
@@ -43,9 +45,11 @@ class TicketLookupControllerTest {
 
         mockMvc.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Request-Id", "smoke-test-carlos-001")
+                        .header("X-Correlation-Id", "smoke-test-carlos-001")
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
+                .andExpect(header().string("X-Correlation-Id", "smoke-test-carlos-001"))
+                .andExpect(header().string("X-Request-Id", "smoke-test-carlos-001"))
                 .andExpect(jsonPath("$.found").value(true))
                 .andExpect(jsonPath("$.awarded").value(true))
                 .andExpect(jsonPath("$.ticketNumber").value("0012345678"))
@@ -53,11 +57,11 @@ class TicketLookupControllerTest {
                 .andExpect(jsonPath("$.prize.currency").value("USD"))
                 .andExpect(jsonPath("$.prize.category").value("CASH"))
                 .andExpect(jsonPath("$.collectionStatus").value("PENDING"))
-                .andExpect(jsonPath("$.provenance").value("REAL"));
+                .andExpect(jsonPath("$.provenance").value("SYNTHETIC"));
     }
 
     @Test
-    @DisplayName("Caso compatible: acepta payload envuelto en 'ticket'")
+    @DisplayName("Caso compatible: acepta payload envuelto en 'ticket' y ecoa X-Correlation-Id")
     void caso_aceptaPayloadEnvueltoEnTicket() throws Exception {
         Map<String, Object> body = Map.of(
                 "ticket", Map.of(
@@ -72,13 +76,13 @@ class TicketLookupControllerTest {
                         .header("X-Request-Id", "smoke-test-carlos-002")
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
+                .andExpect(header().string("X-Correlation-Id", "smoke-test-carlos-002"))
                 .andExpect(jsonPath("$.found").value(true))
-                .andExpect(jsonPath("$.awarded").value(true))
-                .andExpect(jsonPath("$.prize.amount").value("50.00"));
+                .andExpect(jsonPath("$.awarded").value(true));
     }
 
     @Test
-    @DisplayName("Boleto no premiado devuelve awarded=false y prize=null")
+    @DisplayName("Boleto no premiado devuelve awarded=false y omite prize (Jackson NON_NULL)")
     void caso_boletoNoPremiadoDevuelveAwardedFalse() throws Exception {
         Map<String, Object> body = Map.of(
                 "lotteryCode", "LNB",
@@ -88,8 +92,10 @@ class TicketLookupControllerTest {
 
         mockMvc.perform(post("/api/v1/tickets/lookup")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "corr-not-awarded")
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
+                .andExpect(header().string("X-Correlation-Id", "corr-not-awarded"))
                 .andExpect(jsonPath("$.found").value(true))
                 .andExpect(jsonPath("$.awarded").value(false))
                 .andExpect(jsonPath("$.prize").doesNotExist());

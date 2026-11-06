@@ -16,15 +16,15 @@ Write-Host "[1/4] Consultando estado del pool Sybase (/api/v1/tickets/status)...
 try {
     $statusRes = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/status" -Method GET
     Write-Host "  -> Estado del pool: $($statusRes.poolActive)" -ForegroundColor Green
-    Write-Host "  -> Detalle: $($statusRes.lastError)" -ForegroundColor Gray
+    Write-Host "  -> Detalle conexion: $($statusRes.lastError)" -ForegroundColor Gray
 } catch {
     Write-Host "  -> No se pudo conectar a $BaseUrl. Asegurate de levantar la app con: .\mvnw.cmd spring-boot:run" -ForegroundColor Red
     exit 1
 }
 
-# 2. Caso 1: Boleto ganador real ($50.00 USD - Alex/Danny)
+# 2. Caso 1: Boleto ganador ($50.00 USD - Alex/Danny)
 Write-Host ""
-Write-Host "[2/4] Probando Caso 1: Boleto ganador real ($50.00 USD)..." -ForegroundColor White
+Write-Host "[2/4] Probando Caso 1: Boleto ganador ($50.00 USD)..." -ForegroundColor White
 $bodyCaso1 = @{
     lotteryCode = "LNB"
     drawNumber = "2026-10-15"
@@ -33,9 +33,19 @@ $bodyCaso1 = @{
     checkDigit = "5"
 } | ConvertTo-Json
 
-$res1 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso1 -ContentType "application/json" -Headers @{"X-Request-Id"="test-caso1-carlos"}
+$headersCaso1 = @{
+    "X-Request-Id" = "test-caso1-carlos"
+    "X-Correlation-Id" = "corr-carlos-001"
+}
+
+$respHeaders = $null
+$res1 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso1 -ContentType "application/json" -Headers $headersCaso1 -ResponseHeadersVariable respHeaders
 Write-Host "  Respuesta obtenida:" -ForegroundColor Green
 $res1 | ConvertTo-Json -Depth 4 | Write-Host -ForegroundColor Green
+
+if ($respHeaders -and $respHeaders["X-Correlation-Id"]) {
+    Write-Host "  -> Header de correlacion devuelto: $($respHeaders['X-Correlation-Id'][0])" -ForegroundColor Cyan
+}
 
 if ($res1.found -eq $true -and $res1.awarded -eq $true -and $res1.prize.amount -eq "50.00") {
     Write-Host "  -> EXITO: Boleto premiado identificado con procedencia: $($res1.provenance)" -ForegroundColor Green
@@ -56,7 +66,7 @@ $res2 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Bo
 Write-Host "  Respuesta obtenida:" -ForegroundColor Gray
 $res2 | ConvertTo-Json -Depth 4 | Write-Host -ForegroundColor Gray
 if ($res2.found -eq $true -and $res2.awarded -eq $false -and $null -eq $res2.prize) {
-    Write-Host "  -> EXITO: Boleto sin premio reportado correctamente" -ForegroundColor Green
+    Write-Host "  -> EXITO: Boleto sin premio reportado correctamente (prize omitido)" -ForegroundColor Green
 }
 
 # 4. Caso 3: Boleto no encontrado
