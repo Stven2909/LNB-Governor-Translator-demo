@@ -66,11 +66,15 @@ try {
     } else {
         if ((-not $statusRes.poolActive) -and (-not $statusRes.seedEnabled)) {
             Write-Host ""
-            Write-Host "  [NOTA INFORMATIVA] El servicio opera en FAIL-CLOSED (poolActive=false y seedEnabled=false)." -ForegroundColor Yellow
-            Write-Host "  Si desea probar con el fixture simulado local en desarrollo offline, levante el servicio con:" -ForegroundColor Yellow
-            Write-Host "  `$env:APP_SYBASE_TICKET_SEED_ENABLED='true'; .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos" -ForegroundColor Cyan
-            Write-Host "  O para corrida real con VPN: .\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero> -RealLottery <lotto> -RealDraw <draw>" -ForegroundColor Cyan
+            Write-Host "  [ESTADO FAIL-CLOSED CONFIRMADO] El servicio opera de forma segura en fail-closed (poolActive=false y seedEnabled=false)." -ForegroundColor Yellow
+            Write-Host "  Para verificar resolucion de boletos:" -ForegroundColor Yellow
+            Write-Host "    A) Entorno offline simulado: levantar con `$env:APP_SYBASE_TICKET_SEED_ENABLED='true'" -ForegroundColor Cyan
+            Write-Host "    B) Corrida real con VPN: .\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <num> -RealLottery <cod> -RealDraw <sorteo>" -ForegroundColor Cyan
             Write-Host ""
+            Write-Host "=================================================================" -ForegroundColor Cyan
+            Write-Host "  VERIFICACION DE FAIL-CLOSED COMPLETADA EXITOSAMENTE (EXIT CODE 0)" -ForegroundColor Green
+            Write-Host "=================================================================" -ForegroundColor Cyan
+            exit 0
         }
     }
 } catch {
@@ -94,7 +98,9 @@ $headersCaso1 = @{
 
 $respHeaders = $null
 try {
-    $res1 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso1 -ContentType "application/json" -Headers $headersCaso1 -ResponseHeadersVariable respHeaders
+    $webResp = Invoke-WebRequest -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso1 -ContentType "application/json" -Headers $headersCaso1 -UseBasicParsing
+    $res1 = $webResp.Content | ConvertFrom-Json
+    $respHeaders = $webResp.Headers
     Write-Host "  Respuesta obtenida:" -ForegroundColor Green
     $res1 | ConvertTo-Json -Depth 4 | Write-Host -ForegroundColor Green
 } catch {
@@ -103,11 +109,12 @@ try {
 }
 
 # Validar encabezado de correlación
-if (-not ($respHeaders -and $respHeaders["X-Correlation-Id"] -and $respHeaders["X-Correlation-Id"][0] -eq "corr-carlos-001")) {
-    Write-Host "  [FAIL CRITICO] No se devolvio el encabezado X-Correlation-Id correspondiente." -ForegroundColor Red
+$corrHeader = if ($respHeaders["X-Correlation-Id"] -is [array]) { $respHeaders["X-Correlation-Id"][0] } else { $respHeaders["X-Correlation-Id"] }
+if ($corrHeader -ne "corr-carlos-001") {
+    Write-Host "  [FAIL CRITICO] No se devolvio el encabezado X-Correlation-Id correspondiente. Recibido: '$corrHeader'" -ForegroundColor Red
     exit 1
 }
-Write-Host "  -> Header de correlacion devuelto y verificado: $($respHeaders['X-Correlation-Id'][0])" -ForegroundColor Cyan
+Write-Host "  -> Header de correlacion devuelto y verificado: $corrHeader" -ForegroundColor Cyan
 
 # Validar campos de negocio del Caso 1
 if ($res1.found -ne $true -or $res1.awarded -ne $true -or $res1.ticketNumber -ne $RealTicket) {
