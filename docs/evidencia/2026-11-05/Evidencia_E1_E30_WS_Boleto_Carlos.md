@@ -100,7 +100,10 @@ La clave canónica de consulta se compone de 3 campos obligatorios (`lotteryCode
 ```
 
 > [!NOTE]
-> **Pendiente DDL Oficial (Alex / Matthew):** La consulta SQL actual opera con la clave canónica de 3 campos (`lottery_code`, `draw_number`, `ticket_number`). Se solicitó a Alex/Matthew el DDL exacto de la tabla `LOTTERY_TICKETS` en Sybase DEV para confirmar si existen columnas físicas para `series` y `check_digit`. De existir en la tabla, se incorporarán a la cláusula `WHERE` del repositorio y a la respuesta; de no existir, se mantendrá la llave canónica de 3 campos y se sanearán los DTOs.
+> **Pendiente DDL Oficial y Tipos de Datos (Alex / Matthew):** La consulta SQL actual opera con la clave canónica de 3 campos (`lottery_code`, `draw_number`, `ticket_number`). Se solicitó formalmente a Alex/Matthew:
+> 1. El DDL exacto de la tabla (confirmar nombre físico de tabla, actualmente asumido como `LOTTERY_TICKETS`).
+> 2. Si existen físicamente las columnas `series` y `check_digit` (de existir, se incorporarán al `WHERE` del repositorio; de no existir, se retirarán limpiamente de `TicketKey`).
+> 3. Tipos de datos de columnas clave: si `draw_number` es `VARCHAR` o `NUMERIC` (para prevenir desajustes de tipo en `PreparedStatement`), si `prize_amount` es `DECIMAL`/`NUMERIC(x,2)` o tipo `money` de Sybase, y los valores de dominio esperados para `prize_category` (se asume `"CASH"`) y `collection_status`.
 
 ### C. Respuestas Tipadas Canónicas
 
@@ -215,7 +218,8 @@ La suite completa comprende **166 pruebas descubiertas**:
 - **1 prueba de integración real (`SybaseTicketRealTest`):**
   - Anotada con `@EnabledIfEnvironmentVariable(named = "SYBASE_IT", matches = "true")`.
   - En CI/CD y entornos de desarrollo sin VPN a Sybase DEV, JUnit la reporta como **`SKIPPED`** (1 skipped) de forma segura y transparente, sin fallar el build.
-  - **Estado actual:** Esta prueba **NO ha sido ejecutada contra la base de datos real** en este entorno local por falta de túnel VPN y driver con licencia comercial; está preparada y estructurada para ejecutarse en la VM institucional una vez configuradas las variables de entorno oficiales.
+  - **Criterio de Aceptación para Cierre de E1:** En la VM institucional con VPN y `-Psybase`, la ejecución del test real debe reportar explícitamente **`Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`**. Asimismo, la corrida completa de la suite mediante `mvn test -Psybase` con `SYBASE_IT=true` debe finalizar con **`Tests run: 166, Failures: 0, Errors: 0, Skipped: 0`** para confirmar que todo el árbol compila y pasa con el driver real.
+  - **Estado actual:** El código de producción del WS, los tests unitarios y los scripts están listos y revisados; el cierre definitivo de E1 queda sujeto a tres dependencias externas: 1) Corrida física en la VM institucional con VPN y `jconn4`, 2) Confirmación formal del DDL y tipos de datos por Alex/Matthew, 3) Registro de la traza cruda de ejecución en este documento de evidencia.
 
 ---
 
@@ -223,17 +227,21 @@ La suite completa comprende **166 pruebas descubiertas**:
 
 ### A. Ejecución de suite de pruebas:
 ```powershell
-# Ejecución estándar (165 pruebas en verde, prueba real skipped):
+# Ejecución estándar local/CI (165 pruebas en verde, prueba real skipped):
 .\mvnw.cmd test
 
-# Ejecución real en la VM con VPN y jconn4 instalado en .m2:
+# 1. Ejecución de la prueba unitaria/integración real en la VM con VPN y jconn4 en .m2:
+# Requiere validar en consola: "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0"
 $env:SYBASE_IT = "true"
-$env:APP_SYBASE_TICKET_URL = "jdbc:sybase:Tds:..."
-$env:APP_SYBASE_TICKET_USERNAME = "..."
-$env:APP_SYBASE_TICKET_PASSWORD = "..."
-$env:SYBASE_REAL_TICKET = "<numero>"
-$env:SYBASE_REAL_LOTTERY = "<codigo>"
-$env:SYBASE_REAL_DRAW = "<sorteo>"
+$env:APP_SYBASE_TICKET_URL = "$env:APP_SYBASE_TICKET_URL"       # Resuelta por entorno/Vault
+$env:APP_SYBASE_TICKET_USERNAME = "$env:APP_SYBASE_TICKET_USERNAME" # Resuelta por entorno/Vault
+$env:APP_SYBASE_TICKET_PASSWORD = "$env:APP_SYBASE_TICKET_PASSWORD" # Resuelta por entorno/Vault
+$env:SYBASE_REAL_TICKET = "<numero_confirmado>"
+$env:SYBASE_REAL_LOTTERY = "<codigo_confirmado>"
+$env:SYBASE_REAL_DRAW = "<sorteo_confirmado>"
+.\mvnw.cmd test -Psybase "-Dtest=SybaseTicketRealTest"
+
+# 2. Ejecución completa del árbol en la VM (debe dar ~166 tests, 0 skipped):
 .\mvnw.cmd test -Psybase
 ```
 
@@ -246,11 +254,24 @@ $env:SYBASE_REAL_DRAW = "<sorteo>"
 .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos -Psybase
 ```
 
-### C. Verificación mediante script:
+### C. Verificación mediante script y captura de evidencia cruda:
 ```powershell
 # Modo desarrollo local:
 .\scripts\verify-carlos-ws.ps1
 
-# Modo estricto para corrida real con VPN:
-.\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero> -RealLottery <codigo> -RealDraw <sorteo>
+# Modo estricto para corrida real con VPN (capturando salida cruda en archivo):
+.\scripts\verify-carlos-ws.ps1 -StrictMode `
+  -RealTicket $env:SYBASE_REAL_TICKET `
+  -RealLottery $env:SYBASE_REAL_LOTTERY `
+  -RealDraw $env:SYBASE_REAL_DRAW `
+  -RawOutputFile "docs/evidencia/2026-11-05/evidencia-cruda-real.txt"
+
+# Captura HTTP cruda directa alternativa:
+$body = @{ lotteryCode=$env:SYBASE_REAL_LOTTERY; drawNumber=$env:SYBASE_REAL_DRAW; ticketNumber=$env:SYBASE_REAL_TICKET } | ConvertTo-Json
+$r = Invoke-WebRequest -Uri "http://localhost:8085/api/v1/tickets/lookup" -Method POST `
+  -ContentType "application/json" -Headers @{ "X-Correlation-Id"="corr-e1-real" } `
+  -Body $body -UseBasicParsing
+$r.StatusCode | Tee-Object -Append evidencia.txt
+$r.Headers["X-Correlation-Id"] | Tee-Object -Append evidencia.txt
+$r.Content | Tee-Object -Append evidencia.txt
 ```

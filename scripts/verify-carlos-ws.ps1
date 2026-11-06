@@ -9,7 +9,8 @@ param(
     [string]$RealDraw = $(if ($env:SYBASE_REAL_DRAW) { $env:SYBASE_REAL_DRAW } else { "" }),
     [string]$ExpectedAmount = $(if ($env:SYBASE_REAL_AMOUNT) { $env:SYBASE_REAL_AMOUNT } else { "50.00" }),
     [string]$ExpectedCurrency = $(if ($env:SYBASE_REAL_CURRENCY) { $env:SYBASE_REAL_CURRENCY } else { "USD" }),
-    [switch]$SkipContractCases = $false
+    [switch]$SkipContractCases = $false,
+    [string]$RawOutputFile = ""
 )
 
 Write-Host "=================================================================" -ForegroundColor Cyan
@@ -101,8 +102,9 @@ try {
     $webResp = Invoke-WebRequest -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso1 -ContentType "application/json" -Headers $headersCaso1 -UseBasicParsing
     $res1 = $webResp.Content | ConvertFrom-Json
     $respHeaders = $webResp.Headers
-    Write-Host "  Respuesta obtenida:" -ForegroundColor Green
-    $res1 | ConvertTo-Json -Depth 4 | Write-Host -ForegroundColor Green
+    Write-Host "  HTTP Status Code: $($webResp.StatusCode)" -ForegroundColor Green
+    Write-Host "  Respuesta cruda (Content):" -ForegroundColor Green
+    Write-Host "  $($webResp.Content)" -ForegroundColor Green
 } catch {
     Write-Host "  [ERROR] Peticion fallida: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
@@ -115,6 +117,17 @@ if ($corrHeader -ne "corr-carlos-001") {
     exit 1
 }
 Write-Host "  -> Header de correlacion devuelto y verificado: $corrHeader" -ForegroundColor Cyan
+
+# Guardar evidencia cruda si se especificó el parámetro
+if (-not [string]::IsNullOrWhiteSpace($RawOutputFile)) {
+    "=== EVIDENCIA CORRIDA WS CARLOS ===" | Out-File -FilePath $RawOutputFile -Encoding utf8
+    "Fecha: $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')" | Out-File -FilePath $RawOutputFile -Append -Encoding utf8
+    "StatusCode: $($webResp.StatusCode)" | Out-File -FilePath $RawOutputFile -Append -Encoding utf8
+    "X-Correlation-Id: $corrHeader" | Out-File -FilePath $RawOutputFile -Append -Encoding utf8
+    "X-Request-Id: $($respHeaders['X-Request-Id'])" | Out-File -FilePath $RawOutputFile -Append -Encoding utf8
+    "RawContent: $($webResp.Content)" | Out-File -FilePath $RawOutputFile -Append -Encoding utf8
+    Write-Host "  -> Evidencia cruda guardada exitosamente en: $RawOutputFile" -ForegroundColor Cyan
+}
 
 # Validar campos de negocio del Caso 1
 if ($res1.found -ne $true -or $res1.awarded -ne $true -or $res1.ticketNumber -ne $RealTicket) {
