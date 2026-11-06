@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Prueba de integración que demuestra el ciclo completo:
  * Agente IA (Steven) -> Herramienta HTTP -> Web Service de Carlos (POST /api/v1/tickets/lookup).
- * Demuestra que el WS de Carlos satisface al 100% el contrato del agente.
+ * Demuestra que el WS de Carlos satisface al 100% el contrato del agente con trazabilidad honesta.
  */
 class TicketAgentWithCarlosWsIntegrationTest {
 
@@ -36,8 +36,8 @@ class TicketAgentWithCarlosWsIntegrationTest {
     @BeforeAll
     static void startServer() throws IOException {
         SybaseTicketProperties props = new SybaseTicketProperties();
-        props.setEnabled(false);
-        props.setDefaultProvenance("REAL");
+        props.setEnabled(false); // Modo offline / sin conexión VPN directa
+        props.setDefaultProvenance("SYNTHETIC");
         lookupService = new TicketLookupService(new SybaseTicketRepository(props));
 
         server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -78,6 +78,13 @@ class TicketAgentWithCarlosWsIntegrationTest {
                     );
                 }
 
+                // Propagar header X-Correlation-Id recibido
+                String correlationId = exchange.getRequestHeaders().getFirst("X-Correlation-Id");
+                if (correlationId != null) {
+                    exchange.getResponseHeaders().set("X-Correlation-Id", correlationId);
+                    exchange.getResponseHeaders().set("X-Request-Id", correlationId);
+                }
+
                 byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, bytes.length);
@@ -102,17 +109,17 @@ class TicketAgentWithCarlosWsIntegrationTest {
     private TicketAgent buildAgent() {
         TicketAgentProperties props = new TicketAgentProperties();
         props.setMode("HTTP");
-        props.setBaseUrl("http://127.0.0.1:" + port);
+        props.setBaseUrl("http://localhost:" + port);
         props.setLookupPath("/api/v1/tickets/lookup");
-        props.setTimeout("5s");
-        props.setProvenance("REAL");
+        props.setTimeout("2s");
+        props.setProvenance("SYNTHETIC");
 
         HttpTicketQueryTool httpTool = new HttpTicketQueryTool(props);
         return new TicketAgent(new DeterministicTicketModelClient(), httpTool);
     }
 
     @Test
-    @DisplayName("Integración completa: Agente consulta WS de Carlos y obtiene boleto ganador real de 50.00 USD")
+    @DisplayName("Integración completa: Agente consulta WS de Carlos y obtiene boleto ganador con procedencia SYNTHETIC (offline)")
     void agenteConsultaWsDeCarlosConExito() {
         TicketAgent agent = buildAgent();
         TicketKey key = new TicketKey("LNB", "2026-10-15", "0012345678", "A", "5");
@@ -125,7 +132,7 @@ class TicketAgentWithCarlosWsIntegrationTest {
         assertEquals("50.00", result.prize().amount());
         assertEquals("USD", result.prize().currency());
         assertEquals("CASH", result.prize().category());
-        assertEquals(TicketProvenance.REAL, result.provenance());
+        assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
         assertEquals("trace-integral-carlos-001", result.traceId());
     }
 
@@ -140,7 +147,7 @@ class TicketAgentWithCarlosWsIntegrationTest {
         assertNotNull(result);
         assertEquals(TicketLookupStatus.NOT_AWARDED, result.result());
         assertNull(result.prize());
-        assertEquals(TicketProvenance.REAL, result.provenance());
+        assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
     }
 
     @Test
@@ -154,6 +161,6 @@ class TicketAgentWithCarlosWsIntegrationTest {
         assertNotNull(result);
         assertEquals(TicketLookupStatus.NOT_FOUND, result.result());
         assertNull(result.prize());
-        assertEquals(TicketProvenance.REAL, result.provenance());
+        assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
     }
 }
