@@ -37,7 +37,24 @@ class HttpTicketQueryToolTest {
     /** 404 con payload de negocio: el WS declara explicitamente que no encontro el boleto. */
     private static final String NOT_FOUND_404_BODY = """
             {"found":false,"awarded":false,"ticketNumber":"9999999999",
-             "prize":null,"collectionStatus":null,"provenance":"REAL"}
+             "prize":null,"collectionStatus":null,"provenance":"REAL","source":"SYBASE"}
+            """;
+
+    /** Respuesta canonica de Carlos (E1): incluye source, databaseSource y message. */
+    private static final String FOUND_CANONICAL_BODY = """
+            {"found":true,"awarded":true,"ticketNumber":"0012345678",
+             "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
+             "collectionStatus":"PENDING","provenance":"REAL","source":"SYBASE",
+             "databaseSource":"Sybase ASE LNB DEV","message":"Boleto encontrado y premiado"}
+            """;
+
+    /** El contrato puede crecer; un campo nuevo no debe romper la deserializacion. */
+    private static final String FOUND_CANONICAL_WITH_UNKNOWN_FIELD_BODY = """
+            {"found":true,"awarded":true,"ticketNumber":"0012345678",
+             "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
+             "collectionStatus":"PENDING","provenance":"REAL","source":"SYBASE",
+             "databaseSource":"Sybase ASE LNB DEV","message":"Boleto encontrado y premiado",
+             "campoFuturo":{"anidado":true}}
             """;
 
     /** El WS no declara procedencia: el adaptador debe usar la configurada, no inventarla. */
@@ -118,6 +135,34 @@ class HttpTicketQueryToolTest {
             assertFalse(response.found());
             assertEquals("9999999999", response.ticketNumber());
             assertEquals("REAL", response.provenance());
+            assertEquals("SYBASE", response.source());
+        }
+    }
+
+    @Test
+    void respuesta_canonica_con_source_y_databaseSource_se_parsea() throws Exception {
+        // MOCK: shape canonico de Carlos, aun sin el WS real.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_CANONICAL_BODY)) {
+            TicketToolResponse response = tool(props(ws.baseUrl(), "2s")).query(KEY, "req-canonical");
+
+            assertTrue(response.found());
+            assertTrue(response.awarded());
+            assertEquals("50.00", response.prize().amount());
+            assertEquals("REAL", response.provenance());
+            assertEquals("SYBASE", response.source());
+            assertEquals("Sybase ASE LNB DEV", response.databaseSource());
+            assertEquals("Boleto encontrado y premiado", response.message());
+        }
+    }
+
+    @Test
+    void campos_desconocidos_del_ws_no_rompen_la_deserializacion() throws Exception {
+        // El contrato puede crecer: un campo nuevo no debe tumbar el agente.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_CANONICAL_WITH_UNKNOWN_FIELD_BODY)) {
+            TicketToolResponse response = tool(props(ws.baseUrl(), "2s")).query(KEY, "req-unknown");
+
+            assertEquals("REAL", response.provenance());
+            assertEquals("SYBASE", response.source());
         }
     }
 
@@ -146,15 +191,39 @@ class HttpTicketQueryToolTest {
 
     @Test
     void provenance_ausente_usa_la_configurada_y_no_la_inventa() throws Exception {
-        // MOCK: el WS no declara procedencia; manda app.ticket-agent.provenance.
+        // MOCK: el WS no declara procedencia; mandan app.ticket-agent.provenance/source.
         try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_WITHOUT_PROVENANCE_BODY)) {
             TicketAgentProperties props = props(ws.baseUrl(), "2s");
             props.setProvenance("REAL");
+            props.setSource("SYBASE");
 
             TicketToolResponse response = new HttpTicketQueryTool(props).query(KEY, "req-prov");
 
             assertEquals("REAL", response.provenance());
+            assertEquals("SYBASE", response.source());
         }
+    }
+
+    @Test
+    void source_configurada_no_se_inyecta_si_el_ws_declara_procedencia() throws Exception {
+        // El payload manda: si declara provenance, no completamos source por conveniencia.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_BODY)) {
+            TicketAgentProperties props = props(ws.baseUrl(), "2s");
+            props.setSource("SYBASE");
+
+            TicketToolResponse response = new HttpTicketQueryTool(props).query(KEY, "req-src-declared");
+
+            assertEquals("SYNTHETIC", response.provenance());
+            assertNull(response.source());
+        }
+    }
+
+    @Test
+    void source_invalida_falla_al_construir() {
+        TicketAgentProperties props = props("http://127.0.0.1:9090", "2s");
+        props.setSource("OTRA");
+
+        assertThrows(IllegalStateException.class, () -> new HttpTicketQueryTool(props));
     }
 
     @Test

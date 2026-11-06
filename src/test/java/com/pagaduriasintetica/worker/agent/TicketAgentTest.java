@@ -94,4 +94,72 @@ class TicketAgentTest {
         TicketKey key = new TicketKey("LNB", "2026-10-15", "0012345678", null, null);
         assertThrows(InvalidWsResponseException.class, () -> agent.process(key, "test-008"));
     }
+
+    @Test
+    void provenance_real_con_source_sybase_se_acepta() {
+        TicketQueryResult result = agentReturning(found("REAL", "SYBASE"))
+                .process(key(), "gate-real-sybase");
+
+        assertEquals(TicketLookupStatus.FOUND, result.result());
+        assertEquals(TicketProvenance.REAL, result.provenance());
+    }
+
+    @Test
+    void provenance_real_sin_source_falla_cerrado() {
+        InvalidWsResponseException ex = assertThrows(InvalidWsResponseException.class,
+                () -> agentReturning(found("REAL", null)).process(key(), "gate-real-sin-source"));
+
+        assertTrue(ex.getMessage().contains("REAL exige source SYBASE"));
+    }
+
+    @Test
+    void provenance_real_con_source_seed_falla_cerrado() {
+        assertThrows(InvalidWsResponseException.class,
+                () -> agentReturning(found("REAL", "SEED")).process(key(), "gate-real-seed"));
+    }
+
+    @Test
+    void source_sybase_con_provenance_synthetic_falla_cerrado() {
+        InvalidWsResponseException ex = assertThrows(InvalidWsResponseException.class,
+                () -> agentReturning(found("SYNTHETIC", "SYBASE")).process(key(), "gate-synthetic-sybase"));
+
+        assertTrue(ex.getMessage().contains("source SYBASE exige provenance REAL"));
+    }
+
+    @Test
+    void source_seed_con_provenance_synthetic_se_acepta() {
+        TicketQueryResult result = agentReturning(found("SYNTHETIC", "SEED"))
+                .process(key(), "gate-seed");
+
+        assertEquals(TicketLookupStatus.FOUND, result.result());
+        assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+    }
+
+    @Test
+    void source_desconocida_falla_cerrado() {
+        InvalidWsResponseException ex = assertThrows(InvalidWsResponseException.class,
+                () -> agentReturning(found("SYNTHETIC", "OTRA")).process(key(), "gate-source-invalida"));
+
+        assertTrue(ex.getMessage().contains("source inválida"));
+    }
+
+    private static TicketKey key() {
+        return new TicketKey("LNB", "2026-10-15", "0012345678", null, null);
+    }
+
+    private static TicketAgent agentReturning(TicketToolResponse response) {
+        TicketQueryTool tool = (key, traceId) -> response;
+        return new TicketAgent(new DeterministicTicketModelClient(), tool);
+    }
+
+    private static TicketToolResponse found(String provenance, String source) {
+        return new TicketToolResponse(
+                true, true, "0012345678",
+                new PrizeInfo("50.00", "USD", "CASH"),
+                "PENDING",
+                provenance,
+                source,
+                "Sybase ASE LNB DEV",
+                "Boleto encontrado y premiado");
+    }
 }

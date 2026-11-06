@@ -9,6 +9,7 @@ import com.pagaduriasintetica.worker.contract.ticket.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -56,9 +57,6 @@ public class TicketAgent {
         if (ws == null) {
             throw new InvalidWsResponseException("Respuesta WS nula");
         }
-        if (ws.provenance() == null) {
-            throw new InvalidWsResponseException("provenance es obligatorio");
-        }
         if (!StringUtils.hasText(ws.ticketNumber())) {
             throw new InvalidWsResponseException("ticketNumber ausente en respuesta WS");
         }
@@ -66,31 +64,59 @@ public class TicketAgent {
             throw new InvalidWsResponseException("ticketNumber no coincide con la clave solicitada");
         }
 
+        TicketProvenance provenance = resolveProvenance(ws.provenance(), ws.source());
+
         if (!ws.found()) {
             if (ws.awarded() || ws.prize() != null) {
                 throw new InvalidWsResponseException("NOT_FOUND inconsistente con awarded/prize");
             }
-            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_FOUND, null, ws.collectionStatus(), toProvenance(ws.provenance()), "Boleto no encontrado");
+            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_FOUND, null, ws.collectionStatus(), provenance, "Boleto no encontrado");
         }
 
         if (!ws.awarded()) {
             if (ws.prize() != null) {
                 throw new InvalidWsResponseException("NOT_AWARDED inconsistente con prize");
             }
-            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_AWARDED, null, ws.collectionStatus(), toProvenance(ws.provenance()), "Boleto no premiado");
+            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_AWARDED, null, ws.collectionStatus(), provenance, "Boleto no premiado");
         }
 
         if (ws.prize() == null) {
             throw new InvalidWsResponseException("FOUND requiere prize");
         }
-        return new TicketQueryResult(traceId, ticket, TicketLookupStatus.FOUND, ws.prize(), ws.collectionStatus(), toProvenance(ws.provenance()), "Boleto encontrado y premiado");
+        return new TicketQueryResult(traceId, ticket, TicketLookupStatus.FOUND, ws.prize(), ws.collectionStatus(), provenance, "Boleto encontrado y premiado");
     }
 
-    private TicketProvenance toProvenance(String p) {
-        try {
-            return TicketProvenance.valueOf(p.toUpperCase());
-        } catch (Exception e) {
-            throw new InvalidWsResponseException("provenance inválida: " + p);
+    /**
+     * Procedencia declarada por el WS, con la regla de oro del contrato E1:
+     * un dato REAL solo puede venir de Sybase. Si el WS dice REAL sin declarar
+     * {@code source: SYBASE}, o declara SYBASE sin decir REAL, se falla cerrado:
+     * nunca se completa la procedencia por conveniencia del adaptador.
+     */
+    private TicketProvenance resolveProvenance(String provenanceValue, String sourceValue) {
+        if (!StringUtils.hasText(provenanceValue)) {
+            throw new InvalidWsResponseException("provenance es obligatorio");
         }
+
+        TicketProvenance provenance;
+        try {
+            provenance = TicketProvenance.valueOf(provenanceValue.trim().toUpperCase(Locale.ROOT));
+        } catch (RuntimeException e) {
+            throw new InvalidWsResponseException("provenance inválida: " + provenanceValue);
+        }
+
+        String source = StringUtils.hasText(sourceValue) ? sourceValue.trim().toUpperCase(Locale.ROOT) : null;
+        if (source != null && !"SYBASE".equals(source) && !"SEED".equals(source)) {
+            throw new InvalidWsResponseException("source inválida: " + sourceValue);
+        }
+        if (provenance == TicketProvenance.REAL && !"SYBASE".equals(source)) {
+            throw new InvalidWsResponseException("provenance REAL exige source SYBASE");
+        }
+        if ("SYBASE".equals(source) && provenance != TicketProvenance.REAL) {
+            throw new InvalidWsResponseException("source SYBASE exige provenance REAL");
+        }
+        if ("SEED".equals(source) && provenance != TicketProvenance.SYNTHETIC) {
+            throw new InvalidWsResponseException("source SEED exige provenance SYNTHETIC");
+        }
+        return provenance;
     }
 }

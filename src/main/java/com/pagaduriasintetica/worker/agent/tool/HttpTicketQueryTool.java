@@ -37,6 +37,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
     private final RestClient restClient;
     private final String lookupUrl;
     private final String defaultProvenance;
+    private final String defaultSource;
 
     public HttpTicketQueryTool(TicketAgentProperties props) {
         if (!StringUtils.hasText(props.getBaseUrl())) {
@@ -46,6 +47,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
         // base-url se recibe completo para poder apuntar a un mock local o al WS de Carlos.
         this.lookupUrl = props.getBaseUrl() + props.getLookupPath();
         this.defaultProvenance = parseProvenance(props.getProvenance()).name();
+        this.defaultSource = parseSource(props.getSource());
         Duration timeout = parseTimeout(props.getTimeout());
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(timeout);
@@ -64,6 +66,17 @@ public class HttpTicketQueryTool implements TicketQueryTool {
         } catch (RuntimeException e) {
             throw new IllegalStateException("app.ticket-agent.provenance invalida: " + value, e);
         }
+    }
+
+    private static String parseSource(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        if (!"SYBASE".equals(normalized) && !"SEED".equals(normalized)) {
+            throw new IllegalStateException("app.ticket-agent.source invalida: " + value);
+        }
+        return normalized;
     }
 
     private static Duration parseTimeout(String value) {
@@ -101,7 +114,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
             if (response == null) {
                 throw new InvalidWsResponseException("Respuesta WS nula");
             }
-            return withDefaultProvenance(response);
+            return withDefaults(response);
         } catch (RestClientResponseException e) {
             if (e.getStatusCode().value() == 404) {
                 // Un 404 solo es NOT_FOUND si el WS lo dice con un payload de negocio.
@@ -109,7 +122,7 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                 // eso reportaria un dato falso con procedencia real.
                 TicketToolResponse notFound = notFoundFromPayload(e.getResponseBodyAsString());
                 if (notFound != null) {
-                    return withDefaultProvenance(notFound);
+                    return withDefaults(notFound);
                 }
                 throw new TicketWsException(
                         "404 del WS sin payload de negocio (found=false): no se traduce a NOT_FOUND", e);
@@ -155,8 +168,12 @@ public class HttpTicketQueryTool implements TicketQueryTool {
         }
     }
 
-    /** La procedencia del payload manda; la configurada solo cubre el caso en que el WS calle. */
-    private TicketToolResponse withDefaultProvenance(TicketToolResponse response) {
+    /**
+     * La procedencia del payload manda; la configurada solo cubre el caso en que el WS calle.
+     * Si el WS declara procedencia pero omite {@code source}, no se rellena: el agente debe
+     * rechazar un REAL sin SYBASE en lugar de completarlo por conveniencia.
+     */
+    private TicketToolResponse withDefaults(TicketToolResponse response) {
         if (StringUtils.hasText(response.provenance())) {
             return response;
         }
@@ -166,7 +183,10 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                 response.ticketNumber(),
                 response.prize(),
                 response.collectionStatus(),
-                defaultProvenance);
+                defaultProvenance,
+                StringUtils.hasText(response.source()) ? response.source() : defaultSource,
+                response.databaseSource(),
+                response.message());
     }
 
     private static String serialize(Map<String, Object> body) {

@@ -15,6 +15,8 @@ public class TicketAgentProperties {
     private String lookupPath = "/api/v1/tickets/lookup";
     private String timeout = "5s";
     private String provenance = "SYNTHETIC";
+    /** Origen declarado cuando el WS no lo envia: vacio, SYBASE o SEED. */
+    private String source = "";
     private String promptVersion = "ticket-agent-v0.1";
 
     public String getMode() { return mode; }
@@ -40,6 +42,9 @@ public class TicketAgentProperties {
 
     public String getProvenance() { return provenance; }
     public void setProvenance(String provenance) { this.provenance = provenance; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
 
     public String getPromptVersion() { return promptVersion; }
     public void setPromptVersion(String promptVersion) { this.promptVersion = promptVersion; }
