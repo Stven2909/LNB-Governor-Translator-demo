@@ -35,7 +35,7 @@ El proyecto "Agentes y Vertex" para Pagaduría Digital ha evolucionado con un **
 | Frente | Estado | Responsable | Próxima Fecha |
 |--------|--------|-------------|---------------|
 | E3.2 Agente boleto | ✅ D1 implementado | Steven | 27/10 |
-| E3.0 WS Boletos & Sybase | ✅ Entregado y probado | Carlos | 05/11 |
+| E3.0 Contrato mínimo | 🟡 Carlos define WS | Carlos | - |
 | PAYMENT_COMMITTED V1 | ⚪ Backlog | Alex | - |
 | Governor financiero | ⚪ Backlog | - | - |
 | JDBC Sybase real | ⚪ Backlog | Equipo | - |

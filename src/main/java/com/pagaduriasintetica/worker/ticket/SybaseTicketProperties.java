@@ -11,9 +11,9 @@ public class SybaseTicketProperties {
 
     private boolean enabled = false;
     private boolean seedEnabled = false;
-    private String url = "jdbc:sybase:Tds:192.168.2.14:5000/lnb";
+    private String url = "";
     private String driverClassName = "com.sybase.jdbc4.jdbc.SybDriver";
-    private String username = "sa_lnb";
+    private String username = "";
     private String password = "";
     private int poolSize = 5;
     private Duration connectionTimeout = Duration.ofSeconds(3);

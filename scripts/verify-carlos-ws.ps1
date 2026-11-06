@@ -4,7 +4,7 @@
 param(
     [string]$BaseUrl = "http://localhost:8085",
     [switch]$StrictMode = $false,
-    [switch]$OfflineDev = $false
+    [string]$RealTicket = $(if ($env:SYBASE_REAL_TICKET) { $env:SYBASE_REAL_TICKET } else { "0012345678" })
 )
 
 Write-Host "=================================================================" -ForegroundColor Cyan
@@ -12,7 +12,8 @@ Write-Host "  VERIFICACION DEL WS DE CONSULTA DE BOLETOS DE CARLOS (LNB)    " -F
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "Destino: $BaseUrl/api/v1/tickets/lookup" -ForegroundColor Yellow
 if ($StrictMode) {
-    Write-Host "MODO: ESTRICTO REAL (Exige poolActive=true, provenance=REAL, source=SYBASE)" -ForegroundColor Magenta
+    Write-Host "MODO: ESTRICTO REAL (Exige poolActive=true, provenance=REAL, source=SYBASE, databaseSource='Sybase ASE LNB DEV')" -ForegroundColor Magenta
+    Write-Host "Boleto objetivo: $RealTicket" -ForegroundColor Magenta
 } else {
     Write-Host "MODO: DESARROLLO (Acepta fixture de pruebas si no hay VPN activa)" -ForegroundColor Gray
 }
@@ -23,24 +24,31 @@ Write-Host "[1/4] Consultando estado del pool Sybase (/api/v1/tickets/status)...
 try {
     $statusRes = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/status" -Method GET
     Write-Host "  -> Estado del pool: $($statusRes.poolActive)" -ForegroundColor $(if ($statusRes.poolActive) { "Green" } else { "Yellow" })
+    Write-Host "  -> Seed habilitada: $($statusRes.seedEnabled)" -ForegroundColor Gray
     Write-Host "  -> Detalle conexion: $($statusRes.lastError)" -ForegroundColor Gray
 
-    if ($StrictMode -and (-not $statusRes.poolActive)) {
-        Write-Host "  [FAIL CRITICO] MODO ESTRICTO: El pool hacia Sybase no esta activo. Verifique VPN." -ForegroundColor Red
-        exit 1
+    if ($StrictMode) {
+        if (-not $statusRes.poolActive) {
+            Write-Host "  [FAIL CRITICO] MODO ESTRICTO: El pool hacia Sybase no esta activo (poolActive=$($statusRes.poolActive)). Verifique VPN." -ForegroundColor Red
+            exit 1
+        }
+        if ($null -ne $statusRes.lastError) {
+            Write-Host "  [FAIL CRITICO] MODO ESTRICTO: lastError debe ser null en corrida exitosa. Recibido: $($statusRes.lastError)" -ForegroundColor Red
+            exit 1
+        }
     }
 } catch {
     Write-Host "  -> No se pudo conectar a $BaseUrl. Asegurate de levantar la app con perfil carlos: .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos" -ForegroundColor Red
     exit 1
 }
 
-# 2. Caso 1: Boleto ganador ($50.00 USD)
+# 2. Caso 1: Boleto ganador
 Write-Host ""
-Write-Host "[2/4] Probando Caso 1: Boleto ganador ($50.00 USD)..." -ForegroundColor White
+Write-Host "[2/4] Probando Caso 1: Boleto ganador ($RealTicket)..." -ForegroundColor White
 $bodyCaso1 = @{
     lotteryCode = "LNB"
     drawNumber = "2026-10-15"
-    ticketNumber = "0012345678"
+    ticketNumber = $RealTicket
     series = "A"
     checkDigit = "5"
 } | ConvertTo-Json
@@ -68,19 +76,27 @@ if (-not ($respHeaders -and $respHeaders["X-Correlation-Id"] -and $respHeaders["
 Write-Host "  -> Header de correlacion devuelto y verificado: $($respHeaders['X-Correlation-Id'][0])" -ForegroundColor Cyan
 
 # Validar campos de negocio
-if ($res1.found -ne $true -or $res1.awarded -ne $true -or $res1.prize.amount -ne "50.00" -or $res1.prize.currency -ne "USD") {
-    Write-Host "  [FAIL CRITICO] Los datos del premio no coinciden con lo esperado (found=true, awarded=true, prize.amount=50.00 USD)." -ForegroundColor Red
+if ($res1.found -ne $true -or $res1.awarded -ne $true -or $null -eq $res1.prize -or $null -eq $res1.prize.amount) {
+    Write-Host "  [FAIL CRITICO] Los datos del premio no coinciden con lo esperado (found=true, awarded=true, prize.amount presente)." -ForegroundColor Red
     exit 1
 }
 
-# Validar procedencia según modo
+# Validar procedencia, databaseSource y collectionStatus según modo
 if ($StrictMode) {
     if ($res1.provenance -ne "REAL" -or $res1.source -ne "SYBASE") {
         Write-Host "  [FAIL CRITICO] MODO ESTRICTO: provenance debe ser REAL y source debe ser SYBASE. Recibido: provenance=$($res1.provenance), source=$($res1.source)" -ForegroundColor Red
         exit 1
     }
+    if ($res1.databaseSource -ne "Sybase ASE LNB DEV") {
+        Write-Host "  [FAIL CRITICO] MODO ESTRICTO: databaseSource debe ser 'Sybase ASE LNB DEV'. Recibido: '$($res1.databaseSource)'" -ForegroundColor Red
+        exit 1
+    }
+    if ([string]::IsNullOrWhiteSpace($res1.collectionStatus)) {
+        Write-Host "  [FAIL CRITICO] MODO ESTRICTO: collectionStatus no puede ser vacio o nulo en boleto real." -ForegroundColor Red
+        exit 1
+    }
 }
-Write-Host "  -> EXITO Caso 1: Boleto premiado con procedencia '$($res1.provenance)' y source '$($res1.source)'" -ForegroundColor Green
+Write-Host "  -> EXITO Caso 1: Boleto premiado verificado con procedencia '$($res1.provenance)', source '$($res1.source)', status '$($res1.collectionStatus)' y databaseSource '$($res1.databaseSource)'" -ForegroundColor Green
 
 # 3. Caso 2: Boleto no premiado
 Write-Host ""

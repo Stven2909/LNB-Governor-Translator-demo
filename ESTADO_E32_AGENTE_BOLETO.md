@@ -123,13 +123,9 @@ APP_TICKET_AGENT_PROVENANCE=SYNTHETIC
 - **Antes de producción:** `locations/global` implica procesamiento fuera de `us-central1`; confirmar residencia de datos con Cloudfly/seguridad y evaluar un modelo disponible en la región. Además, usar cuenta de servicio con `roles/aiplatform.user` y alertas de presupuesto.
 
 ### WS de Carlos
-- **Estado:** ✅ COMPLETADO Y VERIFICADO (05/11/2026)
-- **Endpoint:** POST /api/v1/tickets/lookup (puerto 8085 / configurable)
-- **Implementación:** TicketLookupController + SybaseTicketRepository (pool HikariCP) + TicketLookupService
-- **Caso 1 LNB:** Boleto ganador real de .00 USD con procedencia REAL
-- **Pruebas de Integración:** TicketAgentWithCarlosWsIntegrationTest PASS (3/3)
-- **Evidencia:** docs/evidencia/2026-11-05/Evidencia_E1_E30_WS_Boleto_Carlos.md
-- **Desbloqueo:** Steven ya puede conmutar el agente a APP_TICKET_AGENT_MODE=HTTP
+- **Pendiente:** Implementación
+- **Avanzamos con:** Fixtures SINTÉTICOS
+- **Fechas:** POR CONFIRMAR por Carlos
 
 ---
 
