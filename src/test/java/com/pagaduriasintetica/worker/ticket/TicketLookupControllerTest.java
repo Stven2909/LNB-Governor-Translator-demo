@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -62,6 +65,32 @@ class TicketLookupControllerTest {
                 .andExpect(jsonPath("$.error").value("DATABASE_UNAVAILABLE"))
                 .andExpect(jsonPath("$.message").value("Pool Sybase no disponible"))
                 .andExpect(jsonPath("$.correlationId").value("trace-fail-closed-001"));
+    }
+
+    @Test
+    @DisplayName("Integridad de datos: devuelve 502 BAD_GATEWAY si los datos de Sybase son inconsistentes")
+    void dataIntegrityError_devuelve502() throws Exception {
+        TicketLookupService mockService = Mockito.mock(TicketLookupService.class);
+        when(mockService.lookup(any()))
+                .thenThrow(new SybaseDataIntegrityException("prize_amount inválido o no normalizable"));
+
+        TicketLookupController controller = new TicketLookupController(mockService);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        Map<String, Object> body = Map.of(
+                "lotteryCode", "LNB",
+                "drawNumber", "2026-10-15",
+                "ticketNumber", "0012345678"
+        );
+
+        mockMvc.perform(post("/api/v1/tickets/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "trace-integrity-001")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadGateway())
+                .andExpect(header().string("X-Correlation-Id", "trace-integrity-001"))
+                .andExpect(jsonPath("$.error").value("DATA_INTEGRITY_ERROR"))
+                .andExpect(jsonPath("$.correlationId").value("trace-integrity-001"));
     }
 
     @Test
@@ -172,6 +201,7 @@ class TicketLookupControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.poolActive").value(false))
                 .andExpect(jsonPath("$.seedEnabled").value(true))
+                .andExpect(jsonPath("$.lastError").exists())
                 .andExpect(jsonPath("$.lastCheck").exists());
     }
 }

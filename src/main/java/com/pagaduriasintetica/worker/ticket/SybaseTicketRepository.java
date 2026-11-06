@@ -28,7 +28,8 @@ public class SybaseTicketRepository {
     private final SybaseTicketProperties properties;
     private final AtomicReference<DataSource> dataSourceRef = new AtomicReference<>();
     private final AtomicBoolean poolInitialized = new AtomicBoolean(false);
-    private final AtomicReference<String> lastError = new AtomicReference<>("Pool no inicializado todavía");
+    private final AtomicReference<String> poolError = new AtomicReference<>("Pool no inicializado todavía");
+    private final AtomicReference<String> lastQueryError = new AtomicReference<>(null);
     private final AtomicReference<Instant> lastCheck = new AtomicReference<>(Instant.now());
 
     public SybaseTicketRepository(SybaseTicketProperties properties) {
@@ -38,7 +39,7 @@ public class SybaseTicketRepository {
 
     private void initPoolAsync() {
         if (!properties.isEnabled()) {
-            lastError.set("Sybase JDBC deshabilitado por configuración (app.sybase.ticket.enabled=false)");
+            poolError.set("Sybase JDBC deshabilitado por configuración (app.sybase.ticket.enabled=false)");
             return;
         }
 
@@ -54,7 +55,7 @@ public class SybaseTicketRepository {
                 } catch (ClassNotFoundException ex) {
                     String err = "Driver JDBC no encontrado. Instale jconn4.jar autorizado mediante: " +
                                  "mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar";
-                    lastError.set(err);
+                    poolError.set(err);
                     log.error(err);
                     return;
                 }
@@ -72,12 +73,12 @@ public class SybaseTicketRepository {
                 HikariDataSource ds = new HikariDataSource(config);
                 dataSourceRef.set(ds);
                 poolInitialized.set(true);
-                lastError.set(null);
+                poolError.set(null);
                 lastCheck.set(Instant.now());
                 log.info("Pool HikariCP configurado exitosamente con driver [{}] hacia: {}", driverClass, jdbcUrl);
             } catch (Exception e) {
                 String msg = "Infraestructura Sybase DEV no alcanzable en este entorno: " + e.getMessage();
-                lastError.set(msg);
+                poolError.set(msg);
                 lastCheck.set(Instant.now());
                 log.warn(msg);
             }
@@ -99,6 +100,7 @@ public class SybaseTicketRepository {
                     ps.setString(2, drawNumber);
                     ps.setString(3, ticketNumber);
                     try (ResultSet rs = ps.executeQuery()) {
+                        lastQueryError.set(null);
                         if (rs.next()) {
                             boolean awarded = rs.getBoolean("awarded");
                             String collectionStatus = rs.getString("collection_status");
@@ -134,8 +136,12 @@ public class SybaseTicketRepository {
                     }
                 }
             } catch (SQLException e) {
-                lastError.set("Fallo al ejecutar consulta en Sybase: " + e.getMessage());
-                log.warn("Consulta JDBC a Sybase falló: {}", e.getMessage());
+                String queryErrMsg = "Fallo al ejecutar consulta en Sybase: " + e.getMessage();
+                lastQueryError.set(queryErrMsg);
+                log.error("Consulta JDBC a Sybase falló: {}", e.getMessage());
+                if (!properties.isSeedEnabled()) {
+                    throw new SybaseDatabaseUnavailableException(queryErrMsg);
+                }
             }
         }
 
@@ -147,7 +153,7 @@ public class SybaseTicketRepository {
 
         // FAIL CLOSED: Si el pool no está activo y la semilla está deshabilitada (default)
         throw new SybaseDatabaseUnavailableException(
-                "Pool Sybase no disponible (poolActive=false). Detalle: " + lastError.get()
+                "Pool Sybase no disponible (pool no inicializado). Detalle: " + poolError.get()
         );
     }
 
@@ -179,13 +185,25 @@ public class SybaseTicketRepository {
 
     private static String normalizeAmount(String amountStr) {
         if (amountStr == null || amountStr.isBlank()) {
-            throw new IllegalStateException("prize_amount no puede ser nulo o vacío en un boleto premiado");
+            throw new SybaseDataIntegrityException("prize_amount no puede ser nulo o vacío en un boleto premiado");
         }
         try {
             BigDecimal bd = new BigDecimal(amountStr.trim());
-            return bd.setScale(2, RoundingMode.HALF_UP).toPlainString();
+            // Soporta ceros irrelevantes a la derecha (ej. Sybase money 50.0000 -> 50.00) sin redondear dígitos significativos
+            BigDecimal stripped = bd.stripTrailingZeros();
+            if (stripped.scale() < 2) {
+                return stripped.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
+            } else if (stripped.scale() == 2) {
+                return stripped.toPlainString();
+            } else {
+                throw new SybaseDataIntegrityException(
+                        "prize_amount tiene más de 2 decimales significativos sin regla de redondeo autorizada: '" + amountStr + "'"
+                );
+            }
+        } catch (SybaseDataIntegrityException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("prize_amount inválido o no normalizable a 2 decimales: '" + amountStr + "'", e);
+            throw new SybaseDataIntegrityException("prize_amount inválido o no normalizable a decimal: '" + amountStr + "'", e);
         }
     }
 
@@ -197,8 +215,16 @@ public class SybaseTicketRepository {
         return properties.isSeedEnabled();
     }
 
+    public String getPoolError() {
+        return poolError.get();
+    }
+
+    public String getLastQueryError() {
+        return lastQueryError.get();
+    }
+
     public String getLastError() {
-        return lastError.get();
+        return poolError.get();
     }
 
     public Instant getLastCheck() {

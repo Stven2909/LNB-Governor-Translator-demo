@@ -61,11 +61,18 @@ public class TicketLookupController {
             log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
                     correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.source());
             return ResponseEntity.ok(response);
-        } catch (SybaseDatabaseUnavailableException | IllegalStateException e) {
-            log.error("[correlationId={}] Fallo seguro (Fail Closed): {}", correlationId, e.getMessage());
+        } catch (SybaseDatabaseUnavailableException e) {
+            log.error("[correlationId={}] Fallo seguro (Fail Closed - Pool Sybase no disponible): {}", correlationId, e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
                     "error", "DATABASE_UNAVAILABLE",
                     "message", "Pool Sybase no disponible",
+                    "correlationId", correlationId
+            ));
+        } catch (SybaseDataIntegrityException e) {
+            log.error("[correlationId={}] Inconsistencia de datos en Sybase: {}", correlationId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                    "error", "DATA_INTEGRITY_ERROR",
+                    "message", "Inconsistencia de datos en Sybase: " + e.getMessage(),
                     "correlationId", correlationId
             ));
         }
