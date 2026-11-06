@@ -23,6 +23,8 @@ public class SybaseTicketRepository {
 
     private static final Logger log = LoggerFactory.getLogger(SybaseTicketRepository.class);
 
+    public static final String DATABASE_SOURCE_LABEL = "Sybase ASE LNB DEV";
+
     private final SybaseTicketProperties properties;
     private final AtomicReference<DataSource> dataSourceRef = new AtomicReference<>();
     private final AtomicBoolean poolInitialized = new AtomicBoolean(false);
@@ -45,26 +47,16 @@ public class SybaseTicketRepository {
                 String driverClass = properties.getDriverClassName();
                 String jdbcUrl = properties.getUrl();
 
-                // 1. Intentar cargar el driver oficial jConnect (com.sybase.jdbc4.jdbc.SybDriver)
+                // Driver oficial jConnect (com.sybase.jdbc4.jdbc.SybDriver)
                 try {
                     Class.forName(driverClass);
                     log.info("Driver oficial jConnect [{}] detectado en classpath", driverClass);
-                } catch (ClassNotFoundException e) {
-                    // 2. Si no está jconn4, intentar con jTDS (si está presente en classpath)
-                    try {
-                        Class.forName("net.sourceforge.jtds.jdbc.Driver");
-                        log.warn("Driver jConnect no disponible; alternando a driver jTDS (net.sourceforge.jtds.jdbc.Driver)");
-                        driverClass = "net.sourceforge.jtds.jdbc.Driver";
-                        if (jdbcUrl.startsWith("jdbc:sybase:Tds:")) {
-                            jdbcUrl = jdbcUrl.replace("jdbc:sybase:Tds:", "jdbc:jtds:sybase://");
-                        }
-                    } catch (ClassNotFoundException ex) {
-                        String err = "Driver JDBC no encontrado. Instale jconn4.jar autorizado mediante: " +
-                                     "mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar";
-                        lastError.set(err);
-                        log.error(err);
-                        return;
-                    }
+                } catch (ClassNotFoundException ex) {
+                    String err = "Driver JDBC no encontrado. Instale jconn4.jar autorizado mediante: " +
+                                 "mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar";
+                    lastError.set(err);
+                    log.error(err);
+                    return;
                 }
 
                 HikariConfig config = new HikariConfig();
@@ -84,7 +76,7 @@ public class SybaseTicketRepository {
                 lastCheck.set(Instant.now());
                 log.info("Pool HikariCP configurado exitosamente con driver [{}] hacia: {}", driverClass, jdbcUrl);
             } catch (Exception e) {
-                String msg = "Infraestructura Sybase DEV no alcanzable en este entorno (192.168.2.14:5000): " + e.getMessage();
+                String msg = "Infraestructura Sybase DEV no alcanzable en este entorno: " + e.getMessage();
                 lastError.set(msg);
                 lastCheck.set(Instant.now());
                 log.warn(msg);
@@ -109,6 +101,7 @@ public class SybaseTicketRepository {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
                             boolean awarded = rs.getBoolean("awarded");
+                            String collectionStatus = rs.getString("collection_status");
                             if (awarded) {
                                 String normalizedAmount = normalizeAmount(rs.getString("prize_amount"));
                                 return TicketLookupResponse.winner(
@@ -116,16 +109,18 @@ public class SybaseTicketRepository {
                                         normalizedAmount,
                                         rs.getString("prize_currency"),
                                         rs.getString("prize_category"),
+                                        collectionStatus,
                                         "REAL",
                                         "SYBASE",
-                                        "Sybase ASE (" + properties.getUrl() + ")"
+                                        DATABASE_SOURCE_LABEL
                                 );
                             } else {
                                 return TicketLookupResponse.notAwarded(
                                         rs.getString("ticket_number"),
+                                        collectionStatus,
                                         "REAL",
                                         "SYBASE",
-                                        "Sybase ASE (" + properties.getUrl() + ")"
+                                        DATABASE_SOURCE_LABEL
                                 );
                             }
                         } else {
@@ -133,7 +128,7 @@ public class SybaseTicketRepository {
                                     ticketNumber,
                                     "REAL",
                                     "SYBASE",
-                                    "Sybase ASE (" + properties.getUrl() + ")"
+                                    DATABASE_SOURCE_LABEL
                             );
                         }
                     }
@@ -175,6 +170,7 @@ public class SybaseTicketRepository {
                 "50.00",
                 "USD",
                 "CASH",
+                "PENDING",
                 "SYNTHETIC",
                 "SEED",
                 sourceInfo
@@ -183,18 +179,22 @@ public class SybaseTicketRepository {
 
     private static String normalizeAmount(String amountStr) {
         if (amountStr == null || amountStr.isBlank()) {
-            return "0.00";
+            throw new IllegalStateException("prize_amount no puede ser nulo o vacío en un boleto premiado");
         }
         try {
             BigDecimal bd = new BigDecimal(amountStr.trim());
-            return bd.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
+            return bd.setScale(2, RoundingMode.HALF_UP).toPlainString();
         } catch (Exception e) {
-            return amountStr.trim();
+            throw new IllegalStateException("prize_amount inválido o no normalizable a 2 decimales: '" + amountStr + "'", e);
         }
     }
 
     public boolean isPoolInitialized() {
         return poolInitialized.get();
+    }
+
+    public boolean isSeedEnabled() {
+        return properties.isSeedEnabled();
     }
 
     public String getLastError() {

@@ -60,6 +60,7 @@ class TicketLookupControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string("X-Correlation-Id", "trace-fail-closed-001"))
                 .andExpect(jsonPath("$.error").value("DATABASE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.message").value("Pool Sybase no disponible"))
                 .andExpect(jsonPath("$.correlationId").value("trace-fail-closed-001"));
     }
 
@@ -169,6 +170,8 @@ class TicketLookupControllerTest {
     void caso_statusPoolDevuelveInformacion() throws Exception {
         mockMvcWithSeed.perform(get("/api/v1/tickets/status"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.poolActive").value(false))
+                .andExpect(jsonPath("$.seedEnabled").value(true))
                 .andExpect(jsonPath("$.lastCheck").exists());
     }
 }

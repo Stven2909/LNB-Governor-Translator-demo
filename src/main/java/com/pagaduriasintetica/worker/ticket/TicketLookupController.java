@@ -61,11 +61,11 @@ public class TicketLookupController {
             log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
                     correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.source());
             return ResponseEntity.ok(response);
-        } catch (SybaseDatabaseUnavailableException e) {
+        } catch (SybaseDatabaseUnavailableException | IllegalStateException e) {
             log.error("[correlationId={}] Fallo seguro (Fail Closed): {}", correlationId, e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
                     "error", "DATABASE_UNAVAILABLE",
-                    "message", e.getMessage(),
+                    "message", "Pool Sybase no disponible",
                     "correlationId", correlationId
             ));
         }

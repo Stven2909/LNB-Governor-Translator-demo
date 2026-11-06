@@ -15,13 +15,22 @@ public record TicketLookupResponse(
         String databaseSource,
         String message
 ) {
-    public static TicketLookupResponse winner(String ticketNumber, String amount, String currency, String category, String provenance, String source, String databaseSource) {
+    public static TicketLookupResponse winner(
+            String ticketNumber,
+            String amount,
+            String currency,
+            String category,
+            String collectionStatus,
+            String provenance,
+            String source,
+            String databaseSource
+    ) {
         return new TicketLookupResponse(
                 true,
                 true,
                 ticketNumber,
                 new PrizeInfo(amount, currency, category),
-                "PENDING",
+                collectionStatus,
                 provenance,
                 source,
                 databaseSource,
@@ -29,18 +38,33 @@ public record TicketLookupResponse(
         );
     }
 
-    public static TicketLookupResponse notAwarded(String ticketNumber, String provenance, String source, String databaseSource) {
+    public static TicketLookupResponse notAwarded(
+            String ticketNumber,
+            String collectionStatus,
+            String provenance,
+            String source,
+            String databaseSource
+    ) {
         return new TicketLookupResponse(
                 true,
                 false,
                 ticketNumber,
                 null,
-                null,
+                collectionStatus,
                 provenance,
                 source,
                 databaseSource,
                 "Boleto sin premio asignado"
         );
+    }
+
+    public static TicketLookupResponse notAwarded(
+            String ticketNumber,
+            String provenance,
+            String source,
+            String databaseSource
+    ) {
+        return notAwarded(ticketNumber, null, provenance, source, databaseSource);
     }
 
     public static TicketLookupResponse notFound(String ticketNumber, String provenance, String source, String databaseSource) {

@@ -3,6 +3,7 @@ package com.pagaduriasintetica.worker.ticket;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -22,10 +23,11 @@ public class TicketLookupService {
     }
 
     public Map<String, Object> getPoolStatus() {
-        return Map.of(
-                "poolActive", repository.isPoolInitialized(),
-                "lastCheck", repository.getLastCheck().toString(),
-                "lastError", repository.getLastError() != null ? repository.getLastError() : "Ninguno (Conexion disponible)"
-        );
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("poolActive", repository.isPoolInitialized());
+        status.put("seedEnabled", repository.isSeedEnabled());
+        status.put("lastError", repository.isPoolInitialized() ? null : repository.getLastError());
+        status.put("lastCheck", repository.getLastCheck() != null ? repository.getLastCheck().toString() : null);
+        return status;
     }
 }
