@@ -81,4 +81,17 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>sybase</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.sybase.jdbc4</groupId>
+					<artifactId>jconn4</artifactId>
+					<version>16.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
 </project>

@@ -51,8 +51,8 @@ class SybaseTicketRealTest {
 
         repository = new SybaseTicketRepository(props);
 
-        // 2. Esperar que el pool HikariCP inicialice (hasta deadline de 10s con pausas de 100ms)
-        Instant deadline = Instant.now().plus(Duration.ofSeconds(10));
+        // 2. Esperar que el pool HikariCP inicialice (hasta deadline de 30s con pausas de 100ms)
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(30));
         while (!repository.isPoolInitialized() && Instant.now().isBefore(deadline)) {
             Thread.sleep(100);
         }

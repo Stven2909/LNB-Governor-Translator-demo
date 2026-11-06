@@ -25,6 +25,7 @@ public class TicketLookupService {
     public Map<String, Object> getPoolStatus() {
         Map<String, Object> status = new LinkedHashMap<>();
         status.put("poolActive", repository.isPoolInitialized());
+        status.put("databaseSource", repository.getDatabaseSource());
         status.put("seedEnabled", repository.isSeedEnabled());
         status.put("lastError", repository.getPoolError());
         status.put("lastQueryError", repository.getLastQueryError());

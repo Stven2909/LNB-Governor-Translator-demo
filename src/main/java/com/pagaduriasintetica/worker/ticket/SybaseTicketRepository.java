@@ -177,17 +177,24 @@ public class SybaseTicketRepository {
             return TicketLookupResponse.notAwarded(ticketNumber, "SYNTHETIC", "SEED", sourceInfo);
         }
 
-        // Caso 1: Boleto ganador de referencia oficial ($50.00 USD)
-        return TicketLookupResponse.winner(
-                ticketNumber != null && !ticketNumber.isBlank() ? ticketNumber : "0012345678",
-                "50.00",
-                "USD",
-                "CASH",
-                "PENDING",
-                "SYNTHETIC",
-                "SEED",
-                sourceInfo
-        );
+        // Caso 1: Boleto ganador de referencia oficial solo para las claves explícitas autorizadas
+        boolean isLnbCanon = "0012345678".equals(ticketNumber) && "2026-10-15".equals(drawNumber) && "LNB".equals(lotteryCode);
+        boolean isLotraCompat = "0012345678".equals(ticketNumber) && "G13PLAN26-LOTRA-01".equals(drawNumber) && "LOTRA".equals(lotteryCode);
+        if (isLnbCanon || isLotraCompat) {
+            return TicketLookupResponse.winner(
+                    "0012345678",
+                    "50.00",
+                    "USD",
+                    "CASH",
+                    "PENDING",
+                    "SYNTHETIC",
+                    "SEED",
+                    sourceInfo
+            );
+        }
+
+        // Cualquier otra combinación de clave en modo semilla no inventa ganadores
+        return TicketLookupResponse.notFound(ticketNumber, "SYNTHETIC", "SEED", sourceInfo);
     }
 
     static String normalizeAmount(String amountStr) {
@@ -219,6 +226,10 @@ public class SybaseTicketRepository {
 
     public boolean isPoolInitialized() {
         return poolInitialized.get();
+    }
+
+    public String getDatabaseSource() {
+        return poolInitialized.get() ? DATABASE_SOURCE_LABEL : "Ninguna (Pool no conectado)";
     }
 
     public boolean isSeedEnabled() {
