@@ -25,7 +25,7 @@ Siguiendo las decisiones cerradas y la retroalimentación técnica oficial del e
    }
    ```
    La semilla (`resolveAuthorizedSeed`) queda desactivada por defecto (`app.sybase.ticket.seed-enabled=false`) y nunca entra en la ruta de ejecución sin habilitación explícita mediante `APP_SYBASE_TICKET_SEED_ENABLED=true`.
-3. **Manejo Tipado de Integridad de Datos (HTTP 502):** Si un boleto premiado devuelto por Sybase presenta inconsistencias de datos (por ejemplo, `prize_amount` nulo o con más de dos decimales significativos sin regla de redondeo autorizada), el servicio lanza `SybaseDataIntegrityException` y responde con **`HTTP 502 Bad Gateway`** (`error: "DATA_INTEGRITY_ERROR"`), diferenciando nítidamente una inconsistencia de datos de un fallo de conexión del pool.
+3. **Manejo Tipado de Integridad de Datos (HTTP 502):** Si un boleto premiado devuelto por Sybase presenta inconsistencias de datos (por ejemplo, `prize_amount` nulo, menor o igual a 0.00, o con más de dos decimales significativos sin regla de redondeo autorizada), el servicio lanza `SybaseDataIntegrityException` y responde con **`HTTP 502 Bad Gateway`** (`error: "DATA_INTEGRITY_ERROR"`), diferenciando nítidamente una inconsistencia de datos de un fallo de conexión del pool.
 4. **Honestidad Rigurosa en la Procedencia:**
    - `provenance: "REAL"` y `source: "SYBASE"` se emiten **únicamente** cuando los datos provienen de una fila física (`ResultSet.next()`) de Sybase ASE con `poolActive: true`.
    - Cuando se activa el perfil de desarrollo offline sin conexión VPN a Sybase DEV, el servicio declara con total transparencia **`provenance: "SYNTHETIC"`** y **`source: "SEED"`**. Nunca se afirma procedencia real sin conexión física.
@@ -38,13 +38,15 @@ Siguiendo las decisiones cerradas y la retroalimentación técnica oficial del e
      ```
 6. **Fidelidad de Datos y Regla de Escala Decimal:**
    - `collectionStatus`: Se mapea fielmente desde la columna `collection_status` del `ResultSet` de Sybase; no se inventa ni se fija `"PENDING"`.
-   - `normalizeAmount`: Emplea `RoundingMode.UNNECESSARY`. No redondea hacia arriba (`HALF_UP`) valores como `50.005` sin autorización de JD. Admite tipos de datos como Sybase `money` con ceros irrelevantes a la derecha (`50.0000` -> `50.00`). Ante escalas mayores a 2 decimales significativos, rechaza la operación fallando cerrado con `SybaseDataIntegrityException`.
+   - `normalizeAmount`: Emplea `RoundingMode.UNNECESSARY` y valida `bd > 0`. No redondea hacia arriba (`HALF_UP`) valores como `50.005` sin autorización de JD. Admite tipos de datos como Sybase `money` con ceros irrelevantes a la derecha (`50.0000` -> `50.00`). Ante escalas mayores a 2 decimales significativos o montos no positivos, rechaza la operación fallando cerrado con `SybaseDataIntegrityException`.
    - `databaseSource`: Se expone mediante etiqueta lógica limpia: `"Sybase ASE LNB DEV"`, sin filtrar URLs de conexión ni direcciones IP internas.
-7. **Configuración Limpia y Aislada:**
+7. **Timeout de Inicialización del Pool Configurable:**
+   - `initializationFailTimeout` se hace configurable mediante `app.sybase.ticket.initialization-fail-timeout` (default: 10s), evitando que Hikari aborte prematuramente a 1 segundo en conexiones VPN con latencia.
+8. **Configuración Limpia y Aislada:**
    - Sin IPs ni credenciales hardcodeadas en código; se resuelven exclusivamente mediante variables de entorno y Secret Manager.
    - `app.sybase.ticket.enabled=false` por defecto globalmente para no interferir en CI/CD ni en la rama de Steven.
    - El puerto por defecto del Worker se mantiene intacto (`PORT:8080`) y el entorno de Carlos opera de forma desacoplada con el perfil `application-carlos.properties` (`PORT:8085`).
-8. **Correlación Distribuida:** El servicio captura `X-Correlation-Id` y `X-Request-Id` y los ecoa obligatoriamente en los headers HTTP de respuesta y en los logs.
+9. **Correlación Distribuida:** El servicio captura `X-Correlation-Id` y `X-Request-Id` y los ecoa obligatoriamente en los headers HTTP de respuesta y en los logs.
 
 ---
 
@@ -59,6 +61,7 @@ Para preservar la seguridad y reproducibilidad del entorno, la configuración se
 | `APP_SYBASE_TICKET_PASSWORD` | String | Contraseña de autenticación JDBC | Vacío |
 | `APP_SYBASE_TICKET_ENABLED` | Boolean | Habilitar pool JDBC de Sybase | `false` |
 | `APP_SYBASE_TICKET_SEED_ENABLED` | Boolean | Habilitar fixture simulado para pruebas locales offline | `false` |
+| `APP_SYBASE_TICKET_INIT_TIMEOUT` | Duration | Timeout de fallo de inicialización en HikariCP | `10s` |
 | `SYBASE_IT` | Boolean | Activar ejecución física de `SybaseTicketRealTest` | `false` |
 | `SYBASE_REAL_TICKET` | String | Número de boleto real confirmado por Alex/Matthew | Requerido si `SYBASE_IT=true` |
 | `SYBASE_REAL_DRAW` | String | Identificador del sorteo real en Sybase | Requerido si `SYBASE_IT=true` |
@@ -87,8 +90,8 @@ Para preservar la seguridad y reproducibilidad del entorno, la configuración se
 ### B. Payload de Entrada (Request)
 ```json
 {
-  "lotteryCode": "LNB",
-  "drawNumber": "2026-10-15",
+  "lotteryCode": "<codigo_loteria>",
+  "drawNumber": "<sorteo>",
   "ticketNumber": "<real>",
   "series": "A",
   "checkDigit": "5"
@@ -187,7 +190,7 @@ Si los datos leídos de Sybase contienen inconsistencias de negocio:
 {
   "poolActive": false,
   "seedEnabled": false,
-  "lastError": "Driver JDBC no encontrado... / Infraestructura no alcanzable",
+  "lastError": "Driver JDBC no encontrado... / Infraestructura Sybase DEV no alcanzable...",
   "lastQueryError": null,
   "lastCheck": "2026-11-05T22:30:00Z"
 }
@@ -197,8 +200,9 @@ Si los datos leídos de Sybase contienen inconsistencias de negocio:
 
 ## 5. Clasificación y Estado de la Suite de Pruebas
 
-La suite completa comprende **146 pruebas descubiertas**:
-- **145 pruebas automatizadas (Unitarias y de Contrato) en VERDE (100% PASS):**
+La suite completa comprende **166 pruebas descubiertas**:
+- **165 pruebas automatizadas (Unitarias y de Contrato) en VERDE (100% PASS):**
+  - `SybaseAmountNormalizationTest` (20 invocaciones de prueba parametrizadas y unitarias): Valida normalización de montos (`50.0000` -> `50.00`, `50` -> `50.00`, `50.5` -> `50.50`), rechazo de escalas decimales con dígitos significativos (`50.005`), rechazo de montos `<= 0.00`, y rechazo de nulos/inválidos.
   - `TicketLookupControllerTest` (8 pruebas): Valida comportamiento 503 Fail-Closed saneado, 502 por error de integridad (`DATA_INTEGRITY_ERROR`), boleto ganador en modo seed, omisión de prize en no premiado, eco de `X-Correlation-Id`, endpoint `/status` con `lastError` y `lastQueryError`, y validación de `HTTP 400 INVALID_INPUT`.
   - `TicketAgentWithCarlosWsContractTest` (3 pruebas): Valida el contrato HTTP directo entre el agente de Steven y el WS de Carlos con shape canónico.
   - Pruebas del Worker, Governor, Pipeline y contratos generales (134 pruebas).
@@ -213,12 +217,12 @@ La suite completa comprende **146 pruebas descubiertas**:
 
 ### A. Ejecución de suite de pruebas:
 ```powershell
-.\mvnw.cmd test "-Daether.connector.https.securityMode=insecure"
+.\mvnw.cmd test
 ```
 
 ### B. Ejecución del servicio localmente (Perfil Carlos):
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=carlos" "-Daether.connector.https.securityMode=insecure"
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos
 ```
 
 ### C. Verificación mediante script:
@@ -227,5 +231,5 @@ La suite completa comprende **146 pruebas descubiertas**:
 .\scripts\verify-carlos-ws.ps1
 
 # Modo estricto para corrida real con VPN:
-.\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero_boleto_confirmado>
+.\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero_boleto_confirmado> -RealLottery <loteria> -RealDraw <sorteo>
 ```

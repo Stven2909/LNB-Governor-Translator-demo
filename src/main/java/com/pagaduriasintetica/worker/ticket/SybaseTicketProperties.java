@@ -17,6 +17,7 @@ public class SybaseTicketProperties {
     private String password = "";
     private int poolSize = 5;
     private Duration connectionTimeout = Duration.ofSeconds(3);
+    private Duration initializationFailTimeout = Duration.ofSeconds(10);
     private String tableName = "LOTTERY_TICKETS";
     private String defaultProvenance = "SYNTHETIC";
 
@@ -43,6 +44,9 @@ public class SybaseTicketProperties {
 
     public Duration getConnectionTimeout() { return connectionTimeout; }
     public void setConnectionTimeout(Duration connectionTimeout) { this.connectionTimeout = connectionTimeout; }
+
+    public Duration getInitializationFailTimeout() { return initializationFailTimeout; }
+    public void setInitializationFailTimeout(Duration initializationFailTimeout) { this.initializationFailTimeout = initializationFailTimeout; }
 
     public String getTableName() { return tableName; }
     public void setTableName(String tableName) { this.tableName = tableName; }
