@@ -29,13 +29,15 @@ Siguiendo las decisiones cerradas y la retroalimentación técnica oficial del e
 4. **Honestidad Rigurosa en la Procedencia:**
    - `provenance: "REAL"` y `source: "SYBASE"` se emiten **únicamente** cuando los datos provienen de una fila física (`ResultSet.next()`) de Sybase ASE con `poolActive: true`.
    - Cuando se activa el perfil de desarrollo offline sin conexión VPN a Sybase DEV, el servicio declara con total transparencia **`provenance: "SYNTHETIC"`** y **`source: "SEED"`**. Nunca se afirma procedencia real sin conexión física.
-5. **Driver Sybase Institucional (jConnect) y Eliminación de jTDS:**
+5. **Driver Sybase Institucional (jConnect) vía Perfil Maven `-Psybase`:**
    - El driver corporativo oficial autorizado por JD/LNB es `com.sybase.jdbc4.jdbc.SybDriver` (`jconn4.jar`).
    - Se removió completamente `jtds` del `pom.xml` y se eliminó todo código de fallback a jTDS en el repositorio.
-   - Debido a restricciones de licencia de SAP/Sybase, el binario `.jar` no se commitea en repositorios públicos; se instala en el repositorio local o privado institucional:
+   - Para no romper builds en CI/CD donde el jar comercial no está disponible en Maven Central, la dependencia `com.sybase.jdbc4:jconn4:16.0` se declara en el perfil Maven `sybase` (`-Psybase`).
+   - En la máquina o VM de despliegue con VPN, el binario institucional se registra en el repositorio local `.m2` mediante:
      ```bash
      mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar
      ```
+   - Al compilar o arrancar con `-Psybase`, Maven inyecta formalmente `jconn4` al classpath de ejecución.
 6. **Fidelidad de Datos y Regla de Escala Decimal:**
    - `collectionStatus`: Se mapea fielmente desde la columna `collection_status` del `ResultSet` de Sybase; no se inventa ni se fija `"PENDING"`.
    - `normalizeAmount`: Emplea `RoundingMode.UNNECESSARY` y valida `bd > 0`. No redondea hacia arriba (`HALF_UP`) valores como `50.005` sin autorización de JD. Admite tipos de datos como Sybase `money` con ceros irrelevantes a la derecha (`50.0000` -> `50.00`). Ante escalas mayores a 2 decimales significativos o montos no positivos, rechaza la operación fallando cerrado con `SybaseDataIntegrityException`.
@@ -46,7 +48,7 @@ Siguiendo las decisiones cerradas y la retroalimentación técnica oficial del e
    - Sin IPs ni credenciales hardcodeadas en código; se resuelven exclusivamente mediante variables de entorno y Secret Manager.
    - `app.sybase.ticket.enabled=false` por defecto globalmente para no interferir en CI/CD ni en la rama de Steven.
    - El puerto por defecto del Worker se mantiene intacto (`PORT:8080`) y el entorno de Carlos opera de forma desacoplada con el perfil `application-carlos.properties` (`PORT:8085`).
-9. **Correlación Distribuida:** El servicio captura `X-Correlation-Id` y `X-Request-Id` y los ecoa obligatoriamente en los headers HTTP de respuesta y en los logs.
+9. **Correlación Distribuida:** El servicio captura `X-Correlation-Id` y `X-Request-Id`. Para garantizar trazabilidad unívoca a través de todos los microservicios, el servicio ecoa el `correlationId` resuelto tanto en `X-Correlation-Id` como en `X-Request-Id` en las cabeceras HTTP de respuesta y en los registros de log.
 
 ---
 
@@ -84,19 +86,21 @@ Para preservar la seguridad y reproducibilidad del entorno, la configuración se
 
 **Headers de Respuesta:**
 - `Content-Type: application/json`
-- `X-Correlation-Id: <mismo id de correlación recibido>`
-- `X-Request-Id: <mismo request id recibido>`
+- `X-Correlation-Id: <correlationId resuelto>`
+- `X-Request-Id: <correlationId resuelto>` *(El servicio ecoa el correlationId resuelto tanto en X-Correlation-Id como en X-Request-Id para garantizar consistencia unívoca de traza)*
 
 ### B. Payload de Entrada (Request)
+La clave canónica de consulta se compone de 3 campos obligatorios (`lotteryCode`, `drawNumber`, `ticketNumber`). Los campos `series` y `checkDigit` se aceptan opcionalmente en el DTO para compatibilidad con el contrato general `TicketKey`:
 ```json
 {
   "lotteryCode": "<codigo_loteria>",
   "drawNumber": "<sorteo>",
-  "ticketNumber": "<real>",
-  "series": "A",
-  "checkDigit": "5"
+  "ticketNumber": "<real>"
 }
 ```
+
+> [!NOTE]
+> **Pendiente DDL Oficial (Alex / Matthew):** La consulta SQL actual opera con la clave canónica de 3 campos (`lottery_code`, `draw_number`, `ticket_number`). Se solicitó a Alex/Matthew el DDL exacto de la tabla `LOTTERY_TICKETS` en Sybase DEV para confirmar si existen columnas físicas para `series` y `check_digit`. De existir en la tabla, se incorporarán a la cláusula `WHERE` del repositorio y a la respuesta; de no existir, se mantendrá la llave canónica de 3 campos y se sanearán los DTOs.
 
 ### C. Respuestas Tipadas Canónicas
 
@@ -178,6 +182,7 @@ Si los datos leídos de Sybase contienen inconsistencias de negocio:
 ```json
 {
   "poolActive": true,
+  "databaseSource": "Sybase ASE LNB DEV",
   "seedEnabled": false,
   "lastError": null,
   "lastQueryError": null,
@@ -189,6 +194,7 @@ Si los datos leídos de Sybase contienen inconsistencias de negocio:
 ```json
 {
   "poolActive": false,
+  "databaseSource": "Ninguna (Pool no conectado)",
   "seedEnabled": false,
   "lastError": "Driver JDBC no encontrado... / Infraestructura Sybase DEV no alcanzable...",
   "lastQueryError": null,
@@ -217,12 +223,27 @@ La suite completa comprende **166 pruebas descubiertas**:
 
 ### A. Ejecución de suite de pruebas:
 ```powershell
+# Ejecución estándar (165 pruebas en verde, prueba real skipped):
 .\mvnw.cmd test
+
+# Ejecución real en la VM con VPN y jconn4 instalado en .m2:
+$env:SYBASE_IT = "true"
+$env:APP_SYBASE_TICKET_URL = "jdbc:sybase:Tds:..."
+$env:APP_SYBASE_TICKET_USERNAME = "..."
+$env:APP_SYBASE_TICKET_PASSWORD = "..."
+$env:SYBASE_REAL_TICKET = "<numero>"
+$env:SYBASE_REAL_LOTTERY = "<codigo>"
+$env:SYBASE_REAL_DRAW = "<sorteo>"
+.\mvnw.cmd test -Psybase
 ```
 
 ### B. Ejecución del servicio localmente (Perfil Carlos):
 ```powershell
+# En desarrollo offline (modo fail-closed por defecto):
 .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos
+
+# En la VM con VPN y jconn4:
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos -Psybase
 ```
 
 ### C. Verificación mediante script:
@@ -231,5 +252,5 @@ La suite completa comprende **166 pruebas descubiertas**:
 .\scripts\verify-carlos-ws.ps1
 
 # Modo estricto para corrida real con VPN:
-.\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero_boleto_confirmado> -RealLottery <loteria> -RealDraw <sorteo>
+.\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero> -RealLottery <codigo> -RealDraw <sorteo>
 ```

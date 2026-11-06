@@ -5,8 +5,10 @@ param(
     [string]$BaseUrl = "http://localhost:8085",
     [switch]$StrictMode = $false,
     [string]$RealTicket = $(if ($env:SYBASE_REAL_TICKET) { $env:SYBASE_REAL_TICKET } else { "" }),
-    [string]$RealLottery = $(if ($env:SYBASE_REAL_LOTTERY) { $env:SYBASE_REAL_LOTTERY } else { "LNB" }),
-    [string]$RealDraw = $(if ($env:SYBASE_REAL_DRAW) { $env:SYBASE_REAL_DRAW } else { "2026-10-15" }),
+    [string]$RealLottery = $(if ($env:SYBASE_REAL_LOTTERY) { $env:SYBASE_REAL_LOTTERY } else { "" }),
+    [string]$RealDraw = $(if ($env:SYBASE_REAL_DRAW) { $env:SYBASE_REAL_DRAW } else { "" }),
+    [string]$ExpectedAmount = $(if ($env:SYBASE_REAL_AMOUNT) { $env:SYBASE_REAL_AMOUNT } else { "50.00" }),
+    [string]$ExpectedCurrency = $(if ($env:SYBASE_REAL_CURRENCY) { $env:SYBASE_REAL_CURRENCY } else { "USD" }),
     [switch]$SkipContractCases = $false
 )
 
@@ -16,16 +18,20 @@ Write-Host "=================================================================" -
 Write-Host "Destino: $BaseUrl/api/v1/tickets/lookup" -ForegroundColor Yellow
 
 if ($StrictMode) {
-    if ([string]::IsNullOrWhiteSpace($RealTicket)) {
-        Write-Host "  [FAIL CRITICO] MODO ESTRICTO: Debe especificar el boleto real confirmado mediante el parametro -RealTicket <numero> o la variable de entorno SYBASE_REAL_TICKET." -ForegroundColor Red
+    if ([string]::IsNullOrWhiteSpace($RealTicket) -or [string]::IsNullOrWhiteSpace($RealLottery) -or [string]::IsNullOrWhiteSpace($RealDraw)) {
+        Write-Host "  [FAIL CRITICO] MODO ESTRICTO: Debe especificar obligatoriamente la clave completa de 3 campos confirmados:" -ForegroundColor Red
+        Write-Host "    -RealTicket <numero>  (o variable SYBASE_REAL_TICKET)" -ForegroundColor Red
+        Write-Host "    -RealLottery <codigo> (o variable SYBASE_REAL_LOTTERY)" -ForegroundColor Red
+        Write-Host "    -RealDraw <sorteo>    (o variable SYBASE_REAL_DRAW)" -ForegroundColor Red
         exit 1
     }
     Write-Host "MODO: ESTRICTO REAL (Exige poolActive=true, seedEnabled=false, lastError=null, provenance=REAL, source=SYBASE, databaseSource='Sybase ASE LNB DEV')" -ForegroundColor Magenta
     Write-Host "Clave real objetivo: Lottery=$RealLottery, Draw=$RealDraw, Ticket=$RealTicket" -ForegroundColor Magenta
+    Write-Host "Premio esperado: $ExpectedAmount $ExpectedCurrency" -ForegroundColor Magenta
 } else {
-    if ([string]::IsNullOrWhiteSpace($RealTicket)) {
-        $RealTicket = "0012345678"
-    }
+    if ([string]::IsNullOrWhiteSpace($RealTicket)) { $RealTicket = "0012345678" }
+    if ([string]::IsNullOrWhiteSpace($RealLottery)) { $RealLottery = "LNB" }
+    if ([string]::IsNullOrWhiteSpace($RealDraw)) { $RealDraw = "2026-10-15" }
     Write-Host "MODO: DESARROLLO LOCAL (Clave objetivo: Lottery=$RealLottery, Draw=$RealDraw, Ticket=$RealTicket)" -ForegroundColor Gray
 }
 Write-Host ""
@@ -35,6 +41,7 @@ Write-Host "[1/4] Consultando estado del pool Sybase (/api/v1/tickets/status)...
 try {
     $statusRes = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/status" -Method GET
     Write-Host "  -> Estado del pool: $($statusRes.poolActive)" -ForegroundColor $(if ($statusRes.poolActive) { "Green" } else { "Yellow" })
+    Write-Host "  -> Origen de base de datos: $($statusRes.databaseSource)" -ForegroundColor Gray
     Write-Host "  -> Seed habilitada: $($statusRes.seedEnabled)" -ForegroundColor Gray
     Write-Host "  -> Error pool (lastError): $($statusRes.lastError)" -ForegroundColor Gray
     Write-Host "  -> Error consulta (lastQueryError): $($statusRes.lastQueryError)" -ForegroundColor Gray
@@ -71,15 +78,13 @@ try {
     exit 1
 }
 
-# 2. Caso 1: Boleto ganador ($50.00 USD)
+# 2. Caso 1: Boleto ganador
 Write-Host ""
 Write-Host "[2/4] Probando Caso 1: Boleto ganador ($RealLottery / $RealDraw / $RealTicket)..." -ForegroundColor White
 $bodyCaso1 = @{
     lotteryCode = $RealLottery
     drawNumber = $RealDraw
     ticketNumber = $RealTicket
-    series = "A"
-    checkDigit = "5"
 } | ConvertTo-Json
 
 $headersCaso1 = @{
@@ -109,8 +114,8 @@ if ($res1.found -ne $true -or $res1.awarded -ne $true -or $res1.ticketNumber -ne
     Write-Host "  [FAIL CRITICO] El boleto debe responder found=true, awarded=true y ticketNumber='$RealTicket'." -ForegroundColor Red
     exit 1
 }
-if ($null -eq $res1.prize -or $res1.prize.amount -ne "50.00" -or $res1.prize.currency -ne "USD") {
-    Write-Host "  [FAIL CRITICO] Los datos del premio no coinciden con el Caso 1 (prize.amount=50.00 USD)." -ForegroundColor Red
+if ($null -eq $res1.prize -or $res1.prize.amount -ne $ExpectedAmount -or $res1.prize.currency -ne $ExpectedCurrency) {
+    Write-Host "  [FAIL CRITICO] Los datos del premio no coinciden con lo esperado ($ExpectedAmount $ExpectedCurrency). Recibido: $($res1.prize.amount) $($res1.prize.currency)" -ForegroundColor Red
     exit 1
 }
 

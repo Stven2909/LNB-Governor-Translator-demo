@@ -200,6 +200,7 @@ class TicketLookupControllerTest {
         mockMvcWithSeed.perform(get("/api/v1/tickets/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.poolActive").value(false))
+                .andExpect(jsonPath("$.databaseSource").value("Ninguna (Pool no conectado)"))
                 .andExpect(jsonPath("$.seedEnabled").value(true))
                 .andExpect(jsonPath("$.lastError").exists())
                 .andExpect(jsonPath("$.lastCheck").exists());
