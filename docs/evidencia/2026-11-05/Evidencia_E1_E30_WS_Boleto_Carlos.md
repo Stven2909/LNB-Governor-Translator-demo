@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-11-05  
 **Responsable:** Carlos Herrera (`carlos@avanzatech.xyz`)  
-**Rama:** `feat/e1-carlos-ticket-ws`  
+**Rama Oficial:** `feat/e1-carlos-ticket-ws`  
 **Tareas ClickUp atendidas:**  
 - `[E1][CARLOS][URGENTE] Entregar WS de un boleto ganador real en Sybase`  
 - `[E1][APOYO] JDBC y pool incluidos en el WS de Carlos`  
@@ -12,42 +12,47 @@
 
 ---
 
-## 1. Resumen Ejecutivo
+## 1. Resumen Ejecutivo y Diagnóstico Técnico
 
-Se implementó y verificó el **Web Service de Consulta de Boletos** para la Pagaduría Digital de la LNB, desacoplado del pipeline del Worker y listo para ser consumido por el Agente de Steven (`HttpTicketQueryTool`) y registrado en el API Gateway por Kimi y Luis.
-
-### Entregables técnicos:
-1. **Endpoint REST:** `POST /api/v1/tickets/lookup` (puerto configurable mediante `PORT`, default `8085`).
-2. **Propagación y eco de correlación distribuida:** Devuelve obligatoriamente los encabezados HTTP `X-Correlation-Id` y `X-Request-Id` recibidos en la petición para auditoría.
-3. **Driver JDBC Sybase ASE:** Integración del driver open source `net.sourceforge.jtds:jtds:1.3.1` (jTDS para Sybase ASE) en `pom.xml`, resolviendo la ausencia de jConnect en repositorios públicos.
-4. **Pool HikariCP resiliente:** Configurado en `SybaseTicketRepository.java` hacia `jdbc:jtds:sybase://192.168.2.14:5000/lnb` con inicialización asíncrona no bloqueante.
-5. **Endpoint de salud y diagnóstico:** `GET /api/v1/tickets/status` que expone en tiempo real si el pool está conectado a Sybase (`poolActive`), última verificación y mensaje de diagnóstico.
-6. **Honestidad en la procedencia de datos:**
-   - **En entorno de desarrollo local sin VPN:** Al no haber socket TCP activo hacia `192.168.2.14:5000`, el pool registra el estado sin conexión y el servicio responde con el fixture autorizado del Caso 1 marcando transparentemente `provenance: "SYNTHETIC"`, cumpliendo la directiva de Danny Medrano de no presentar fixtures locales como lecturas reales de Sybase.
-   - **En entorno Cloud Run / DEV con Serverless VPC Connector:** Al existir túnel de red activo a Sybase DEV, el pool ejecuta el `PreparedStatement` parametrizado y retorna `provenance: "REAL"`.
-7. **Pruebas automáticas:** 9 pruebas unitarias y de integración en el módulo de tickets; la suite global pasa con **143/143 tests en verde**.
+Siguiendo las decisiones cerradas y la retroalimentación técnica oficial del equipo (Steven Rivera y Jorge Daniel López - JD):
+1. **Contrato Canónico Cerrado:** Se consolidó el contrato oficial de `TicketLookupResponse` con shape estructurado (`found`, `awarded`, `ticketNumber`, `prize{amount, currency, category}`, `collectionStatus`, `provenance`, `source`, `databaseSource`, `message`). El JSON plano preliminar queda formalmente retirado.
+2. **Esquema Fail-Closed (Fallo Seguro):** Si el pool de Sybase no está activo o la consulta a la base de datos falla, el servicio responde con **`HTTP 503 Service Unavailable`** con error tipado `DATABASE_UNAVAILABLE`. El modo semilla (`resolveAuthorizedSeed`) queda desactivado por defecto (`app.sybase.ticket.seed-enabled=false`) y solo se activa explícitamente en el perfil local de desarrollo.
+3. **Honestidad Rigurosa en la Procedencia:**
+   - `provenance: "REAL"` y `source: "SYBASE"` se emiten **únicamente** cuando los datos provienen de una fila física (`ResultSet.next()`) en Sybase ASE con `poolActive: true`.
+   - Cuando se activa el perfil de desarrollo offline sin conexión VPN a Sybase DEV (`192.168.2.14:5000`), el servicio declara con transparencia **`provenance: "SYNTHETIC"`** y **`source: "SEED"`**. Nunca se afirma procedencia real sin conexión física.
+4. **Driver Sybase Institucional (jConnect):**
+   - El driver corporativo oficial es `com.sybase.jdbc4.jdbc.SybDriver` (`jconn4.jar`).
+   - Debido a restricciones de licenciamiento de SAP/Sybase, el binario `.jar` no se commitea en repositorios públicos; se instala en el repositorio Maven local o privado institucional con el comando:
+     ```bash
+     mvn install:install-file -Dfile=jconn4.jar -DgroupId=com.sybase.jdbc4 -DartifactId=jconn4 -Dversion=16.0 -Dpackaging=jar
+     ```
+   - El repositorio cuenta con detección automática para cargar `jconn4.jar` en cuanto esté disponible en el classpath.
+5. **Configuración Limpia y Aislada:**
+   - Sin IP ni credenciales hardcodeadas en código; se resuelven mediante variables de entorno y Secret Manager.
+   - `app.sybase.ticket.enabled=false` por defecto globalmente para no afectar builds automáticos de CI/CD.
+   - El puerto por defecto del Worker permanece en `PORT:8080` y la configuración de Carlos se activa limpiamente mediante el perfil de Spring Boot: `application-carlos.properties`.
+   - No se aplican exclusiones globales a `DataSourceAutoConfiguration`, manteniendo intacto el entrypoint del Worker (`WorkerPocApplication.java`).
+6. **Correlación Distribuida:** El servicio captura `X-Correlation-Id` y `X-Request-Id` y los devuelve obligatoriamente en las cabeceras HTTP de respuesta y en los registros de log.
 
 ---
 
-## 2. Contrato de Entrada y Salida (Shape Oficial)
-
-El contrato de datos implementado en `TicketLookupResponse` está alineado al 100% con el modelo `TicketToolResponse` que consume `HttpTicketQueryTool`.
+## 2. Contrato de Entrada y Salida Canónico
 
 ### A. Endpoint
-`POST /api/v1/tickets/lookup`  
+`POST /api/v1/tickets/lookup`
+
 **Headers de Entrada:**
 - `Content-Type: application/json`
-- `X-Correlation-Id: <uuid o correlacion>`
+- `X-Correlation-Id: <uuid o id de correlación>`
 - `X-Request-Id: <uuid opcional>`
 
-**Headers de Salida:**
+**Headers de Respuesta:**
 - `Content-Type: application/json`
-- `X-Correlation-Id: <mismo id de correlacion recibido>`
+- `X-Correlation-Id: <mismo id de correlación recibido>`
 - `X-Request-Id: <mismo request id recibido>`
 
-### B. Payload de Entrada
-Acepta la clave completa compuesta (5 campos), tanto en formato plano como envuelto en el objeto `ticket`:
-
+### B. Payload de Entrada (Request)
+Acepta la clave compuesta del boleto (con `drawNumber` como String):
 ```json
 {
   "lotteryCode": "LNB",
@@ -58,11 +63,9 @@ Acepta la clave completa compuesta (5 campos), tanto en formato plano como envue
 }
 ```
 
-### C. Respuestas Tipadas en Formato JSON
+### C. Respuestas Tipadas Canónicas
 
-Debido a que `TicketLookupResponse` utiliza `@JsonInclude(JsonInclude.Include.NON_NULL)`, los campos nulos se omiten limpiamente del JSON:
-
-#### Caso 1 — Boleto Ganador ($50.00 USD - Caso 1 de Alex y Danny)
+#### 1. Boleto Ganador ($50.00 USD)
 ```json
 {
   "found": true,
@@ -74,99 +77,106 @@ Debido a que `TicketLookupResponse` utiliza `@JsonInclude(JsonInclude.Include.NO
     "category": "CASH"
   },
   "collectionStatus": "PENDING",
-  "provenance": "SYNTHETIC",
-  "databaseSource": "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexión VPN]",
+  "provenance": "REAL",
+  "source": "SYBASE",
+  "databaseSource": "Sybase ASE (jdbc:sybase:Tds:192.168.2.14:5000/lnb)",
   "message": "Boleto encontrado y premiado"
 }
 ```
-*(Nota: En producción/DEV con VPN activa, `provenance` cambia a `REAL` y `databaseSource` a `Sybase ASE`)*.
+*(En entorno offline de pruebas sin VPN, `provenance` reporta honestamente `"SYNTHETIC"` y `source` `"SEED"`)*.
 
-#### Caso 2 — Boleto No Premiado (`0011111111`)
+#### 2. Boleto No Premiado
 ```json
 {
   "found": true,
   "awarded": false,
   "ticketNumber": "0011111111",
-  "provenance": "SYNTHETIC",
-  "databaseSource": "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexión VPN]",
+  "provenance": "REAL",
+  "source": "SYBASE",
+  "databaseSource": "Sybase ASE (jdbc:sybase:Tds:192.168.2.14:5000/lnb)",
   "message": "Boleto sin premio asignado"
 }
 ```
+*(Debido a `@JsonInclude(NON_NULL)`, el campo `prize` se omite limpiamente)*.
 
-#### Caso 3 — Boleto No Encontrado (`9999999999`)
+#### 3. Boleto No Encontrado
 ```json
 {
   "found": false,
   "awarded": false,
   "ticketNumber": "9999999999",
-  "provenance": "SYNTHETIC",
-  "databaseSource": "Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexión VPN]",
-  "message": "Boleto no encontrado en los registros de lotería"
+  "provenance": "REAL",
+  "source": "SYBASE",
+  "databaseSource": "Sybase ASE (jdbc:sybase:Tds:192.168.2.14:5000/lnb)",
+  "message": "Boleto no encontrado"
 }
 ```
 
-#### Caso 4 — Petición Inválida (HTTP 400 Bad Request)
+#### 4. Fallo Seguro (HTTP 503 Service Unavailable)
+Si el pool no está activo y la semilla está deshabilitada:
 ```json
 {
-  "correlationId": "smoke-test-carlos-004",
-  "code": "INVALID_INPUT",
-  "message": "Campos obligatorios requeridos: lotteryCode, drawNumber, ticketNumber"
+  "error": "DATABASE_UNAVAILABLE",
+  "message": "Pool Sybase no disponible (poolActive=false)...",
+  "correlationId": "trace-fail-closed-001"
 }
 ```
 
 ---
 
-## 3. Arquitectura del Pool JDBC y Sybase
+## 3. Arquitectura y Salud del Pool JDBC
 
-### Configuración en `application.properties`:
-```properties
-app.sybase.ticket.enabled=${APP_SYBASE_TICKET_ENABLED:true}
-app.sybase.ticket.url=${APP_SYBASE_TICKET_URL:jdbc:sybase:Tds:192.168.2.14:5000/lnb}
-app.sybase.ticket.driver-class-name=${APP_SYBASE_TICKET_DRIVER:com.sybase.jdbc4.jdbc.SybDriver}
-app.sybase.ticket.username=${APP_SYBASE_TICKET_USERNAME:sa_lnb}
-app.sybase.ticket.password=${APP_SYBASE_TICKET_PASSWORD:}
-app.sybase.ticket.pool-size=${APP_SYBASE_TICKET_POOL_SIZE:5}
-app.sybase.ticket.connection-timeout=${APP_SYBASE_TICKET_TIMEOUT:3s}
-app.sybase.ticket.table-name=${APP_SYBASE_TICKET_TABLE:LOTTERY_TICKETS}
-app.sybase.ticket.default-provenance=${APP_SYBASE_TICKET_PROVENANCE:SYNTHETIC}
+### Endpoint de Diagnóstico:
+`GET /api/v1/tickets/status`
+
+**Salida con Sybase activo:**
+```json
+{
+  "poolActive": true,
+  "lastError": null,
+  "lastCheck": "2026-11-05T22:30:00Z"
+}
 ```
 
-### Resolución dinámica del Driver:
-1. `SybaseTicketRepository` intenta cargar `com.sybase.jdbc4.jdbc.SybDriver` si Alex/equipo lo proporcionan.
-2. Si jConnect no está presente en el classpath, conmuta de forma automática y transparente a `net.sourceforge.jtds.jdbc.Driver` (jTDS para Sybase) y adapta la URL a `jdbc:jtds:sybase://192.168.2.14:5000/lnb`.
-3. Esto elimina el error `ClassNotFoundException` y permite que HikariCP intente la conexión física real vía socket.
+---
+
+## 4. Clasificación y Estado de las Pruebas
+
+Para mantener total rigor metodológico, las pruebas se clasifican y ejecutan en categorías diferenciadas:
+
+1. **`TicketLookupControllerTest` (7 pruebas MockMvc):**
+   - Valida el comportamiento Fail-Closed devolviendo `HTTP 503` cuando el pool no está activo y `seed-enabled=false`.
+   - Valida el boleto ganador en modo pruebas con `provenance: "SYNTHETIC"` y `source: "SEED"`.
+   - Valida la propagación y eco de `X-Correlation-Id`.
+   - Valida la omisión de `prize` en boletos no premiados.
+   - Valida boletos inexistentes (`found=false`) y rechazo de peticiones incompletas (`HTTP 400`).
+2. **`TicketAgentWithCarlosWsContractTest` (3 pruebas de contrato local):**
+   - Prueba de contrato local entre el `TicketAgent` de Steven (usando el cliente determinista `DeterministicTicketModelClient`) y el WS de Carlos vía HTTP. Acredita que el cliente HTTP de Steven deserializa sin errores el shape oficial.
+3. **`SybaseTicketRealIT` (Prueba de integración física gateada):**
+   - Anotada con `@EnabledIfEnvironmentVariable(named = "SYBASE_IT", matches = "true")`.
+   - Solo se ejecuta en entornos con conectividad de red y túnel VPN hacia `192.168.2.14:5000`. En cualquier otro entorno, JUnit la salta (`SKIPPED`) de forma transparente sin romper el pipeline.
 
 ---
 
-## 4. Estado de las Pruebas Automatizadas
+## 5. Instrucciones de Ejecución y Verificación
 
-La suite total del proyecto ejecuta **143 pruebas Maven sin fallas ni errores**:
-- **`TicketLookupControllerTest` (6 pruebas):** Pruebas unitarias MockMvc que verifican:
-  - Ganador con premio de $50 USD y eco de `X-Correlation-Id`.
-  - Compatibilidad con payload plano o envuelto en `ticket`.
-  - Boleto no premiado con omisión de `prize`.
-  - Boleto no encontrado con `found=false`.
-  - Validación 400 por datos incompletos.
-  - Endpoint de diagnóstico del pool (`/status`).
-- **`TicketAgentWithCarlosWsIntegrationTest` (3 pruebas):** Ciclo completo end-to-end integrando el `TicketAgent` de Steven mediante HTTP contra el WS.
-- **Suite global del Worker (134 pruebas):** Idempotencia, reintentos atómicos, deduplicación de hash y canalizaciones del modular monolith.
+### A. Para desarrollo local y pruebas (Perfil Carlos):
+```powershell
+cd "C:\Users\tmoyy\OneDrive\Desktop\lNB\LNB-Governor-Translator-demo"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=carlos" "-Daether.connector.https.securityMode=insecure"
+```
 
----
+### B. Ejecutar script de verificación:
+```powershell
+# En modo desarrollo local:
+.\scripts\verify-carlos-ws.ps1
 
-## 5. Instrucciones de Verificación Local
+# En modo estricto para corrida real con VPN:
+.\scripts\verify-carlos-ws.ps1 -StrictMode
+```
 
-1. **Iniciar la aplicación:**
-   ```powershell
-   cd "C:\Users\tmoyy\OneDrive\Desktop\lNB\LNB-Governor-Translator-demo"
-   .\mvnw.cmd spring-boot:run "-Daether.connector.https.securityMode=insecure"
-   ```
-
-2. **Ejecutar script de verificación interactiva:**
-   ```powershell
-   .\scripts\verify-carlos-ws.ps1
-   ```
-
-3. **Ejecutar suite de pruebas Maven:**
-   ```powershell
-   .\mvnw.cmd test "-Daether.connector.https.securityMode=insecure"
-   ```
+### C. Ejecutar suite de pruebas:
+```powershell
+.\mvnw.cmd test "-Daether.connector.https.securityMode=insecure"
+```
+*(Para activar la prueba de integración real cuando haya VPN: `$env:SYBASE_IT="true"; .\mvnw.cmd test`)*.

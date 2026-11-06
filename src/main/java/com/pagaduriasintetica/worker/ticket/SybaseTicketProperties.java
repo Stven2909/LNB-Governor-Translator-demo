@@ -9,7 +9,8 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "app.sybase.ticket")
 public class SybaseTicketProperties {
 
-    private boolean enabled = true;
+    private boolean enabled = false;
+    private boolean seedEnabled = false;
     private String url = "jdbc:sybase:Tds:192.168.2.14:5000/lnb";
     private String driverClassName = "com.sybase.jdbc4.jdbc.SybDriver";
     private String username = "sa_lnb";
@@ -17,10 +18,13 @@ public class SybaseTicketProperties {
     private int poolSize = 5;
     private Duration connectionTimeout = Duration.ofSeconds(3);
     private String tableName = "LOTTERY_TICKETS";
-    private String defaultProvenance = "REAL";
+    private String defaultProvenance = "SYNTHETIC";
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public boolean isSeedEnabled() { return seedEnabled; }
+    public void setSeedEnabled(boolean seedEnabled) { this.seedEnabled = seedEnabled; }
 
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
