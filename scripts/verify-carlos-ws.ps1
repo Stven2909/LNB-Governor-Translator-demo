@@ -4,7 +4,10 @@
 param(
     [string]$BaseUrl = "http://localhost:8085",
     [switch]$StrictMode = $false,
-    [string]$RealTicket = $(if ($env:SYBASE_REAL_TICKET) { $env:SYBASE_REAL_TICKET } else { "" })
+    [string]$RealTicket = $(if ($env:SYBASE_REAL_TICKET) { $env:SYBASE_REAL_TICKET } else { "" }),
+    [string]$RealLottery = $(if ($env:SYBASE_REAL_LOTTERY) { $env:SYBASE_REAL_LOTTERY } else { "LNB" }),
+    [string]$RealDraw = $(if ($env:SYBASE_REAL_DRAW) { $env:SYBASE_REAL_DRAW } else { "2026-10-15" }),
+    [switch]$SkipContractCases = $false
 )
 
 Write-Host "=================================================================" -ForegroundColor Cyan
@@ -17,13 +20,13 @@ if ($StrictMode) {
         Write-Host "  [FAIL CRITICO] MODO ESTRICTO: Debe especificar el boleto real confirmado mediante el parametro -RealTicket <numero> o la variable de entorno SYBASE_REAL_TICKET." -ForegroundColor Red
         exit 1
     }
-    Write-Host "MODO: ESTRICTO REAL (Exige poolActive=true, lastError=null, provenance=REAL, source=SYBASE, databaseSource='Sybase ASE LNB DEV')" -ForegroundColor Magenta
-    Write-Host "Boleto objetivo: $RealTicket" -ForegroundColor Magenta
+    Write-Host "MODO: ESTRICTO REAL (Exige poolActive=true, seedEnabled=false, lastError=null, provenance=REAL, source=SYBASE, databaseSource='Sybase ASE LNB DEV')" -ForegroundColor Magenta
+    Write-Host "Clave real objetivo: Lottery=$RealLottery, Draw=$RealDraw, Ticket=$RealTicket" -ForegroundColor Magenta
 } else {
     if ([string]::IsNullOrWhiteSpace($RealTicket)) {
         $RealTicket = "0012345678"
     }
-    Write-Host "MODO: DESARROLLO LOCAL (Boleto objetivo: $RealTicket)" -ForegroundColor Gray
+    Write-Host "MODO: DESARROLLO LOCAL (Clave objetivo: Lottery=$RealLottery, Draw=$RealDraw, Ticket=$RealTicket)" -ForegroundColor Gray
 }
 Write-Host ""
 
@@ -37,6 +40,10 @@ try {
     Write-Host "  -> Error consulta (lastQueryError): $($statusRes.lastQueryError)" -ForegroundColor Gray
 
     if ($StrictMode) {
+        if ($statusRes.seedEnabled -eq $true) {
+            Write-Host "  [FAIL CRITICO] MODO ESTRICTO: seedEnabled debe ser false en una corrida real contra Sybase. Recibido: seedEnabled=true" -ForegroundColor Red
+            exit 1
+        }
         if (-not $statusRes.poolActive) {
             Write-Host "  [FAIL CRITICO] MODO ESTRICTO: El pool hacia Sybase no esta activo (poolActive=$($statusRes.poolActive)). Verifique VPN y credenciales." -ForegroundColor Red
             exit 1
@@ -55,7 +62,7 @@ try {
             Write-Host "  [NOTA INFORMATIVA] El servicio opera en FAIL-CLOSED (poolActive=false y seedEnabled=false)." -ForegroundColor Yellow
             Write-Host "  Si desea probar con el fixture simulado local en desarrollo offline, levante el servicio con:" -ForegroundColor Yellow
             Write-Host "  `$env:APP_SYBASE_TICKET_SEED_ENABLED='true'; .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=carlos" -ForegroundColor Cyan
-            Write-Host "  O para corrida real con VPN: .\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero>" -ForegroundColor Cyan
+            Write-Host "  O para corrida real con VPN: .\scripts\verify-carlos-ws.ps1 -StrictMode -RealTicket <numero> -RealLottery <lotto> -RealDraw <draw>" -ForegroundColor Cyan
             Write-Host ""
         }
     }
@@ -66,10 +73,10 @@ try {
 
 # 2. Caso 1: Boleto ganador ($50.00 USD)
 Write-Host ""
-Write-Host "[2/4] Probando Caso 1: Boleto ganador ($RealTicket)..." -ForegroundColor White
+Write-Host "[2/4] Probando Caso 1: Boleto ganador ($RealLottery / $RealDraw / $RealTicket)..." -ForegroundColor White
 $bodyCaso1 = @{
-    lotteryCode = "LNB"
-    drawNumber = "2026-10-15"
+    lotteryCode = $RealLottery
+    drawNumber = $RealDraw
     ticketNumber = $RealTicket
     series = "A"
     checkDigit = "5"
@@ -124,37 +131,43 @@ if ($StrictMode) {
 }
 Write-Host "  -> EXITO Caso 1: Boleto premiado verificado ($($res1.prize.amount) $($res1.prize.currency)) con procedencia '$($res1.provenance)', source '$($res1.source)', status '$($res1.collectionStatus)' y databaseSource '$($res1.databaseSource)'" -ForegroundColor Green
 
-# 3. Caso 2: Boleto no premiado
-Write-Host ""
-Write-Host "[3/4] Probando Caso 2: Boleto no premiado (0011111111)..." -ForegroundColor White
-$bodyCaso2 = @{
-    lotteryCode = "LNB"
-    drawNumber = "2026-10-15"
-    ticketNumber = "0011111111"
-} | ConvertTo-Json
+# 3. Casos de contrato (Casos 2 y 3)
+if ($SkipContractCases -or $StrictMode) {
+    Write-Host ""
+    Write-Host "[3/4 y 4/4] Omitiendo casos de contrato fixtures (0011111111 y 9999999999) en corrida real. Cierre de E1 enfocado en boleto ganador real confirmado." -ForegroundColor Yellow
+} else {
+    # Caso 2: Boleto no premiado
+    Write-Host ""
+    Write-Host "[3/4] Probando Caso 2: Boleto no premiado (0011111111)..." -ForegroundColor White
+    $bodyCaso2 = @{
+        lotteryCode = "LNB"
+        drawNumber = "2026-10-15"
+        ticketNumber = "0011111111"
+    } | ConvertTo-Json
 
-$res2 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso2 -ContentType "application/json"
-if ($res2.found -ne $true -or $res2.awarded -ne $false -or $null -ne $res2.prize) {
-    Write-Host "  [FAIL CRITICO] Caso no premiado debe devolver found=true, awarded=false y prize omitido." -ForegroundColor Red
-    exit 1
+    $res2 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso2 -ContentType "application/json"
+    if ($res2.found -ne $true -or $res2.awarded -ne $false -or $null -ne $res2.prize) {
+        Write-Host "  [FAIL CRITICO] Caso no premiado debe devolver found=true, awarded=false y prize omitido." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "  -> EXITO Caso 2: Boleto sin premio reportado correctamente (prize omitido)" -ForegroundColor Green
+
+    # Caso 3: Boleto no encontrado
+    Write-Host ""
+    Write-Host "[4/4] Probando Caso 3: Boleto inexistente (9999999999)..." -ForegroundColor White
+    $bodyCaso3 = @{
+        lotteryCode = "LNB"
+        drawNumber = "2026-10-15"
+        ticketNumber = "9999999999"
+    } | ConvertTo-Json
+
+    $res3 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso3 -ContentType "application/json"
+    if ($res3.found -ne $false) {
+        Write-Host "  [FAIL CRITICO] Caso inexistente debe devolver found=false." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "  -> EXITO Caso 3: Boleto inexistente reportado correctamente" -ForegroundColor Green
 }
-Write-Host "  -> EXITO Caso 2: Boleto sin premio reportado correctamente (prize omitido)" -ForegroundColor Green
-
-# 4. Caso 3: Boleto no encontrado
-Write-Host ""
-Write-Host "[4/4] Probando Caso 3: Boleto inexistente (9999999999)..." -ForegroundColor White
-$bodyCaso3 = @{
-    lotteryCode = "LNB"
-    drawNumber = "2026-10-15"
-    ticketNumber = "9999999999"
-} | ConvertTo-Json
-
-$res3 = Invoke-RestMethod -Uri "$BaseUrl/api/v1/tickets/lookup" -Method POST -Body $bodyCaso3 -ContentType "application/json"
-if ($res3.found -ne $false) {
-    Write-Host "  [FAIL CRITICO] Caso inexistente debe devolver found=false." -ForegroundColor Red
-    exit 1
-}
-Write-Host "  -> EXITO Caso 3: Boleto inexistente reportado correctamente" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan

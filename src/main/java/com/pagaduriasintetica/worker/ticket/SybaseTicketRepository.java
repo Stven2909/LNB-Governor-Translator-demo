@@ -67,7 +67,7 @@ public class SybaseTicketRepository {
                 config.setPassword(properties.getPassword());
                 config.setMaximumPoolSize(properties.getPoolSize());
                 config.setConnectionTimeout(properties.getConnectionTimeout().toMillis());
-                config.setInitializationFailTimeout(1000); // fail-fast si no hay VPN activa
+                config.setInitializationFailTimeout(properties.getInitializationFailTimeout().toMillis());
                 config.setPoolName("SybaseTicketPool-Carlos");
 
                 HikariDataSource ds = new HikariDataSource(config);
@@ -77,7 +77,9 @@ public class SybaseTicketRepository {
                 lastCheck.set(Instant.now());
                 log.info("Pool HikariCP configurado exitosamente con driver [{}] hacia: {}", driverClass, jdbcUrl);
             } catch (Exception e) {
-                String msg = "Infraestructura Sybase DEV no alcanzable en este entorno: " + e.getMessage();
+                String rawMsg = e.getMessage() != null ? e.getMessage() : "Error de conexion";
+                String sanitizedMsg = rawMsg.replaceAll("\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?::\\d+)?\\b", "[redacted]");
+                String msg = "Infraestructura Sybase DEV no alcanzable: " + sanitizedMsg;
                 poolError.set(msg);
                 lastCheck.set(Instant.now());
                 log.warn(msg);
@@ -105,17 +107,22 @@ public class SybaseTicketRepository {
                             boolean awarded = rs.getBoolean("awarded");
                             String collectionStatus = rs.getString("collection_status");
                             if (awarded) {
-                                String normalizedAmount = normalizeAmount(rs.getString("prize_amount"));
-                                return TicketLookupResponse.winner(
-                                        rs.getString("ticket_number"),
-                                        normalizedAmount,
-                                        rs.getString("prize_currency"),
-                                        rs.getString("prize_category"),
-                                        collectionStatus,
-                                        "REAL",
-                                        "SYBASE",
-                                        DATABASE_SOURCE_LABEL
-                                );
+                                try {
+                                    String normalizedAmount = normalizeAmount(rs.getString("prize_amount"));
+                                    return TicketLookupResponse.winner(
+                                            rs.getString("ticket_number"),
+                                            normalizedAmount,
+                                            rs.getString("prize_currency"),
+                                            rs.getString("prize_category"),
+                                            collectionStatus,
+                                            "REAL",
+                                            "SYBASE",
+                                            DATABASE_SOURCE_LABEL
+                                    );
+                                } catch (SybaseDataIntegrityException ex) {
+                                    lastQueryError.set("Error de integridad en datos de Sybase: " + ex.getMessage());
+                                    throw ex;
+                                }
                             } else {
                                 return TicketLookupResponse.notAwarded(
                                         rs.getString("ticket_number"),
@@ -183,12 +190,15 @@ public class SybaseTicketRepository {
         );
     }
 
-    private static String normalizeAmount(String amountStr) {
+    static String normalizeAmount(String amountStr) {
         if (amountStr == null || amountStr.isBlank()) {
             throw new SybaseDataIntegrityException("prize_amount no puede ser nulo o vacío en un boleto premiado");
         }
         try {
             BigDecimal bd = new BigDecimal(amountStr.trim());
+            if (bd.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new SybaseDataIntegrityException("prize_amount debe ser un valor estrictamente positivo mayor a 0.00 en un boleto premiado: '" + amountStr + "'");
+            }
             // Soporta ceros irrelevantes a la derecha (ej. Sybase money 50.0000 -> 50.00) sin redondear dígitos significativos
             BigDecimal stripped = bd.stripTrailingZeros();
             if (stripped.scale() < 2) {
