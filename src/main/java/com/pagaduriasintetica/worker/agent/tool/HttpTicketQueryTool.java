@@ -9,6 +9,7 @@ import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityExceptio
 import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
+import com.pagaduriasintetica.worker.agent.exception.TicketWsUnavailableException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
 import com.pagaduriasintetica.worker.contract.ticket.TicketProvenance;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -131,17 +132,26 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                         "404 del WS sin payload de negocio (found=false): no se traduce a NOT_FOUND", e);
             }
             // El estado del WS es informacion de negocio, no un detalle de transporte: 503
-            // significa "no pude consultar" y 502 "el dato es inconsistente". Degradarlos a
-            // un 502 generico obligaria al llamador a adivinar lo que el WS ya dijo.
+            // significa "no pude consultar" y 502 "el dato es inconsistente". Pero el codigo
+            // del cuerpo es el que autoriza a afirmar la causa: un 503 de un proxy no es
+            // DATABASE_UNAVAILABLE, y un 502 sin DATA_INTEGRITY_ERROR no es una inconsistencia
+            // confirmada. Si el codigo no coincide, se conserva el estado con un codigo generico.
+            String code = errorCode(e.getResponseBodyAsString());
+            String detail = status + (StringUtils.hasText(code) ? " " + code : "");
             if (status == 503) {
-                throw new TicketDatabaseUnavailableException(
-                        "WS de tickets sin base de datos disponible (503"
-                                + codeSuffix(e.getResponseBodyAsString()) + ")", e);
+                if ("DATABASE_UNAVAILABLE".equals(code)) {
+                    throw new TicketDatabaseUnavailableException(
+                            "WS de tickets sin base de datos disponible (" + detail + ")", e);
+                }
+                throw new TicketWsUnavailableException(
+                        "WS de tickets no disponible (" + detail + ")", e);
             }
             if (status == 502) {
-                throw new TicketDataIntegrityException(
-                        "WS de tickets reporta inconsistencia de datos (502"
-                                + codeSuffix(e.getResponseBodyAsString()) + ")", e);
+                if ("DATA_INTEGRITY_ERROR".equals(code)) {
+                    throw new TicketDataIntegrityException(
+                            "WS de tickets reporta inconsistencia de datos (" + detail + ")", e);
+                }
+                throw new TicketWsException("Error WS: " + detail, e);
             }
             throw new TicketWsException("Error WS: " + e.getStatusCode(), e);
         } catch (ResourceAccessException e) {
@@ -185,23 +195,30 @@ public class HttpTicketQueryTool implements TicketQueryTool {
     }
 
     /**
-     * Codigo de error declarado por el WS, para conservarlo en el mensaje sin volcar el
-     * cuerpo completo. Un cuerpo opaco no impide mapear el estado HTTP.
+     * Codigo de error declarado por el WS. El contrato canonico usa {@code error} para
+     * 503/502 y {@code code} para 400; se aceptan ambos para no perder el codigo real.
+     * Un cuerpo opaco o sin codigo devuelve {@code null}: el estado HTTP se conserva,
+     * pero no se inventa una causa.
      */
-    private static String codeSuffix(String body) {
+    private static String errorCode(String body) {
         if (!StringUtils.hasText(body)) {
-            return ")";
+            return null;
         }
         try {
             JsonNode node = JSON.readTree(body);
-            JsonNode code = node == null ? null : node.get("code");
-            if (code != null && code.isTextual() && StringUtils.hasText(code.asText())) {
-                return " " + code.asText().trim() + ")";
+            if (node == null || !node.isObject()) {
+                return null;
+            }
+            for (String field : new String[]{"error", "code"}) {
+                JsonNode value = node.get(field);
+                if (value != null && value.isTextual() && StringUtils.hasText(value.asText())) {
+                    return value.asText().trim();
+                }
             }
         } catch (JsonProcessingException ignored) {
             // El estado HTTP ya es suficiente; no se inventa un codigo.
         }
-        return ")";
+        return null;
     }
 
     /**

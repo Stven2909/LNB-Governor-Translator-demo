@@ -30,6 +30,7 @@ class TicketAgentTest {
         assertEquals("CASH", result.prize().category());
         assertEquals("PENDING", result.collectionStatus());
         assertEquals("test-001", result.traceId());
+        assertNull(result.source(), "FIXTURE no declara source");
     }
 
     @Test
@@ -39,6 +40,7 @@ class TicketAgentTest {
         TicketQueryResult result = agent.process(key, "test-002");
         assertEquals(TicketLookupStatus.NOT_FOUND, result.result());
         assertNull(result.prize());
+        assertNull(result.source());
     }
 
     @Test
@@ -48,6 +50,7 @@ class TicketAgentTest {
         TicketQueryResult result = agent.process(key, "test-003");
         assertEquals(TicketLookupStatus.NOT_AWARDED, result.result());
         assertNull(result.prize());
+        assertNull(result.source());
     }
 
     @Test
@@ -105,6 +108,7 @@ class TicketAgentTest {
 
         assertEquals(TicketLookupStatus.FOUND, result.result());
         assertEquals(TicketProvenance.REAL, result.provenance());
+        assertEquals("SYBASE", result.source());
     }
 
     @Test
@@ -136,6 +140,24 @@ class TicketAgentTest {
 
         assertEquals(TicketLookupStatus.FOUND, result.result());
         assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+        assertEquals("SEED", result.source());
+    }
+
+    @Test
+    void source_se_normaliza_a_mayusculas_y_sin_espacios() {
+        TicketQueryResult result = agentReturning(found("SYNTHETIC", " seed "))
+                .process(key(), "gate-source-normalizada");
+
+        assertEquals("SEED", result.source());
+    }
+
+    @Test
+    void provenance_synthetic_sin_source_se_acepta_y_source_queda_nulo() {
+        TicketQueryResult result = agentReturning(found("SYNTHETIC", null))
+                .process(key(), "gate-sin-source");
+
+        assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+        assertNull(result.source());
     }
 
     @Test

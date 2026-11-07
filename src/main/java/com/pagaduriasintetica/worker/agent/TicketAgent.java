@@ -64,26 +64,38 @@ public class TicketAgent {
             throw new InvalidWsResponseException("ticketNumber no coincide con la clave solicitada");
         }
 
-        TicketProvenance provenance = resolveProvenance(ws.provenance(), ws.source());
+        String source = normalizeSource(ws.source());
+        TicketProvenance provenance = resolveProvenance(ws.provenance(), source);
 
         if (!ws.found()) {
             if (ws.awarded() || ws.prize() != null) {
                 throw new InvalidWsResponseException("NOT_FOUND inconsistente con awarded/prize");
             }
-            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_FOUND, null, ws.collectionStatus(), provenance, "Boleto no encontrado");
+            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_FOUND, null, ws.collectionStatus(), provenance, source, "Boleto no encontrado");
         }
 
         if (!ws.awarded()) {
             if (ws.prize() != null) {
                 throw new InvalidWsResponseException("NOT_AWARDED inconsistente con prize");
             }
-            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_AWARDED, null, ws.collectionStatus(), provenance, "Boleto no premiado");
+            return new TicketQueryResult(traceId, ticket, TicketLookupStatus.NOT_AWARDED, null, ws.collectionStatus(), provenance, source, "Boleto no premiado");
         }
 
         if (ws.prize() == null) {
             throw new InvalidWsResponseException("FOUND requiere prize");
         }
-        return new TicketQueryResult(traceId, ticket, TicketLookupStatus.FOUND, ws.prize(), ws.collectionStatus(), provenance, "Boleto encontrado y premiado");
+        return new TicketQueryResult(traceId, ticket, TicketLookupStatus.FOUND, ws.prize(), ws.collectionStatus(), provenance, source, "Boleto encontrado y premiado");
+    }
+
+    /**
+     * Normaliza el origen declarado por el WS. No rellena nada: si el WS no lo envia,
+     * el resultado tampoco lo inventa.
+     */
+    private static String normalizeSource(String sourceValue) {
+        if (!StringUtils.hasText(sourceValue)) {
+            return null;
+        }
+        return sourceValue.trim().toUpperCase(Locale.ROOT);
     }
 
     /**
@@ -92,7 +104,7 @@ public class TicketAgent {
      * {@code source: SYBASE}, o declara SYBASE sin decir REAL, se falla cerrado:
      * nunca se completa la procedencia por conveniencia del adaptador.
      */
-    private TicketProvenance resolveProvenance(String provenanceValue, String sourceValue) {
+    private TicketProvenance resolveProvenance(String provenanceValue, String source) {
         if (!StringUtils.hasText(provenanceValue)) {
             throw new InvalidWsResponseException("provenance es obligatorio");
         }
@@ -104,9 +116,8 @@ public class TicketAgent {
             throw new InvalidWsResponseException("provenance inválida: " + provenanceValue);
         }
 
-        String source = StringUtils.hasText(sourceValue) ? sourceValue.trim().toUpperCase(Locale.ROOT) : null;
         if (source != null && !"SYBASE".equals(source) && !"SEED".equals(source)) {
-            throw new InvalidWsResponseException("source inválida: " + sourceValue);
+            throw new InvalidWsResponseException("source inválida: " + source);
         }
         if (provenance == TicketProvenance.REAL && !"SYBASE".equals(source)) {
             throw new InvalidWsResponseException("provenance REAL exige source SYBASE");

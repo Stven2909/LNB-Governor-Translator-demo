@@ -6,6 +6,7 @@ import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityExceptio
 import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
+import com.pagaduriasintetica.worker.agent.exception.TicketWsUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -69,6 +70,20 @@ public class TicketAgentAdvice {
         log.warn("TicketAgent DATA_INTEGRITY_ERROR traceId={}: {}", traceId, ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(errorBody(traceId, "DATA_INTEGRITY_ERROR", ex.getMessage()));
+    }
+
+    /**
+     * 503 del WS sin codigo DATABASE_UNAVAILABLE: se conserva el 503 porque el
+     * upstream no esta disponible, pero no se afirma la causa que el WS no declaro.
+     */
+    @ExceptionHandler(TicketWsUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleWsUnavailable(TicketWsUnavailableException ex,
+                                                                   HttpServletRequest request,
+                                                                   HttpServletResponse response) {
+        String traceId = correlation(request, response);
+        log.warn("TicketAgent WS_UNAVAILABLE traceId={}: {}", traceId, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(errorBody(traceId, "WS_ERROR", ex.getMessage()));
     }
 
     @ExceptionHandler(TicketWsException.class)

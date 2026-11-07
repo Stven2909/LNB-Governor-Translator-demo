@@ -9,6 +9,13 @@
 # Uso:
 #   .\verify-agent-e2e.ps1 -WsUrl http://localhost:8085 -AgentUrl http://localhost:8080 -OutFile e2e-trace.txt
 #
+# Para una corrida Sybase real:
+#   .\verify-agent-e2e.ps1 ... -ExpectedProvenance REAL -ExpectedSource SYBASE
+#
+# Si se pasa -WsLogPath, el runner exige DOS lineas "Procesando consulta de boleto"
+# por correlacion: una de su llamada directa al WS y otra del agente. Sin ese log,
+# la traza por si sola no distingue el modo HTTP del modo FIXTURE.
+#
 # Deja la traza cruda (status, cabeceras y cuerpo) en -OutFile y devuelve exit 0 solo
 # si los 3 casos canonicos, el eco de correlacion y las cabeceras coinciden.
 # Compatible con Windows PowerShell 5.1 y PowerShell 7+.
@@ -16,7 +23,10 @@
 param(
     [string]$WsUrl    = "http://localhost:8085",
     [string]$AgentUrl = "http://localhost:8080",
-    [string]$OutFile  = "e2e-trace.txt"
+    [string]$OutFile  = "e2e-trace.txt",
+    [string]$ExpectedSource     = "SEED",
+    [string]$ExpectedProvenance = "SYNTHETIC",
+    [string]$WsLogPath          = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -132,14 +142,18 @@ foreach ($case in $cases) {
             Write-Trace ("FAIL WS {0}: awarded={1} esperado={2}" -f $ticketNumber, $wsJson.awarded, $case.WsAwarded)
             $fail++
         }
-        if ($wsJson.provenance -ne "SYNTHETIC" -or $wsJson.source -ne "SEED") {
-            Write-Trace ("FAIL WS {0}: provenance/source={1}/{2} (modo semilla exige SYNTHETIC/SEED)" -f `
-                $ticketNumber, $wsJson.provenance, $wsJson.source)
+        if ($wsJson.provenance -ne $ExpectedProvenance -or $wsJson.source -ne $ExpectedSource) {
+            Write-Trace ("FAIL WS {0}: provenance/source={1}/{2} (esperado {3}/{4})" -f `
+                $ticketNumber, $wsJson.provenance, $wsJson.source, $ExpectedProvenance, $ExpectedSource)
             $fail++
         }
     }
     if ((Get-HeaderValue -Response $ws -Name "X-Correlation-Id") -ne $correlationId) {
         Write-Trace ("FAIL WS {0}: no ecoa X-Correlation-Id" -f $ticketNumber)
+        $fail++
+    }
+    if ((Get-HeaderValue -Response $ws -Name "X-Request-Id") -ne $correlationId) {
+        Write-Trace ("FAIL WS {0}: no ecoa X-Request-Id" -f $ticketNumber)
         $fail++
     }
 
@@ -178,8 +192,13 @@ foreach ($case in $cases) {
             Write-Trace ("FAIL AGENTE {0}: result={1} esperado={2}" -f $ticketNumber, $agentJson.result, $case.Result)
             $fail++
         }
-        if ($agentJson.provenance -ne "SYNTHETIC") {
-            Write-Trace ("FAIL AGENTE {0}: provenance={1} esperado=SYNTHETIC" -f $ticketNumber, $agentJson.provenance)
+        if ($agentJson.provenance -ne $ExpectedProvenance) {
+            Write-Trace ("FAIL AGENTE {0}: provenance={1} esperado={2}" -f $ticketNumber, $agentJson.provenance, $ExpectedProvenance)
+            $fail++
+        }
+        if ($null -eq $agentJson.source -or [string]$agentJson.source -ne $ExpectedSource) {
+            Write-Trace ("FAIL AGENTE {0}: source={1} esperado={2} (FIXTURE no declara source)" -f `
+                $ticketNumber, $agentJson.source, $ExpectedSource)
             $fail++
         }
         if ($agentJson.traceId -ne $correlationId) {
@@ -201,6 +220,18 @@ foreach ($case in $cases) {
             Write-Trace ("FAIL AGENTE {0}: premio presente en {1}" -f $ticketNumber, $case.Result)
             $fail++
         }
+        if ($case.Result -ne "FOUND") {
+            # ConvertFrom-Json convierte "prize":null en $null y el chequeo anterior no lo ve.
+            # Se inspecciona el JSON crudo para exigir que el campo NO exista.
+            if ($agent.Content -match '"prize"\s*:') {
+                Write-Trace ("FAIL AGENTE {0}: JSON crudo contiene prize en {1}" -f $ticketNumber, $case.Result)
+                $fail++
+            }
+            if ($agent.Content -match '"collectionStatus"\s*:') {
+                Write-Trace ("FAIL AGENTE {0}: JSON crudo contiene collectionStatus en {1}" -f $ticketNumber, $case.Result)
+                $fail++
+            }
+        }
     }
     if ((Get-HeaderValue -Response $agent -Name "X-Correlation-Id") -ne $correlationId) {
         Write-Trace ("FAIL AGENTE {0}: no ecoa X-Correlation-Id" -f $ticketNumber)
@@ -209,6 +240,26 @@ foreach ($case in $cases) {
     if ((Get-HeaderValue -Response $agent -Name "X-Request-Id") -ne $correlationId) {
         Write-Trace ("FAIL AGENTE {0}: no ecoa X-Request-Id" -f $ticketNumber)
         $fail++
+    }
+}
+
+# Prueba documental: si se entrega el log del WS, cada correlacion debe aparecer DOS
+# veces (llamada directa del runner + llamada del agente). En FIXTURE solo aparece una.
+if ([string]::IsNullOrWhiteSpace($WsLogPath)) {
+    Write-Trace "WARN sin -WsLogPath no se puede probar que el agente llamo al WS; use la prueba negativa o pase el log"
+} elseif (-not (Test-Path -LiteralPath $WsLogPath)) {
+    Write-Trace ("FAIL WsLogPath no existe: {0}" -f $WsLogPath)
+    $fail++
+} else {
+    $log = Get-Content -LiteralPath $WsLogPath -ErrorAction SilentlyContinue
+    foreach ($case in $cases) {
+        $needle = "correlationId=corr-e2e-$($case.Id)]"
+        $count = ($log | Select-String -SimpleMatch $needle | Measure-Object).Count
+        if ($count -ne 2) {
+            Write-Trace ("FAIL WS log {0}: {1} apariciones de {2} (esperadas 2: runner + agente)" -f `
+                $case.Id, $count, $needle)
+            $fail++
+        }
     }
 }
 

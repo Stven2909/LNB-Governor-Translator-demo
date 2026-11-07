@@ -22,17 +22,17 @@ class TicketAgentHttpModeTest {
     private static final String FOUND_BODY = """
             {"found":true,"awarded":true,"ticketNumber":"0012345678",
              "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
-             "collectionStatus":"PENDING","provenance":"SYNTHETIC"}
+             "collectionStatus":"PENDING","provenance":"SYNTHETIC","source":"SEED"}
             """;
 
     private static final String NOT_AWARDED_BODY = """
             {"found":true,"awarded":false,"ticketNumber":"0011111111",
-             "prize":null,"collectionStatus":null,"provenance":"SYNTHETIC"}
+             "prize":null,"collectionStatus":null,"provenance":"SYNTHETIC","source":"SEED"}
             """;
 
     private static final String NOT_FOUND_BODY = """
             {"found":false,"awarded":false,"ticketNumber":"9999999999",
-             "prize":null,"collectionStatus":null,"provenance":"SYNTHETIC"}
+             "prize":null,"collectionStatus":null,"provenance":"SYNTHETIC","source":"SEED"}
             """;
 
     private static TicketAgent agent(MockTicketWsServer ws, String timeout) {
@@ -57,18 +57,21 @@ class TicketAgentHttpModeTest {
             assertEquals(TicketLookupStatus.FOUND, found.result());
             assertEquals("50.00", found.prize().amount());
             assertEquals("http-001", found.traceId());
+            assertEquals("SEED", found.source());
 
             ws.respond(200, NOT_AWARDED_BODY);
             TicketQueryResult notAwarded = agent.process(
                     new TicketKey("LNB", "2026-10-15", "0011111111", null, null), "http-002");
             assertEquals(TicketLookupStatus.NOT_AWARDED, notAwarded.result());
             assertNull(notAwarded.prize());
+            assertEquals("SEED", notAwarded.source());
 
             ws.respond(200, NOT_FOUND_BODY);
             TicketQueryResult notFound = agent.process(
                     new TicketKey("LNB", "2026-10-15", "9999999999", null, null), "http-003");
             assertEquals(TicketLookupStatus.NOT_FOUND, notFound.result());
             assertNull(notFound.prize());
+            assertEquals("SEED", notFound.source());
         }
     }
 
