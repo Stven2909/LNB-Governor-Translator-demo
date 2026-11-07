@@ -1,0 +1,35 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.1)
+
+2026-11-06T21:51:00.965-06:00  INFO 19352 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Starting WorkerPocApplication v0.0.1-SNAPSHOT using Java 21.0.6 with PID 19352 (C:\Users\steve\Documents\Agentes y Vertex\worker-poc\target\worker-poc-0.0.1-SNAPSHOT.jar started by steve in C:\Users\steve\Documents\Agentes y Vertex\worker-poc)
+2026-11-06T21:51:00.985-06:00  INFO 19352 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T21:51:05.120-06:00  INFO 19352 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8085 (http)
+2026-11-06T21:51:05.154-06:00  INFO 19352 --- [worker-poc] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-06T21:51:05.155-06:00  INFO 19352 --- [worker-poc] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.24]
+2026-11-06T21:51:05.229-06:00  INFO 19352 --- [worker-poc] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 4041 ms
+2026-11-06T21:51:07.826-06:00  INFO 19352 --- [worker-poc] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-11-06T21:51:08.088-06:00  INFO 19352 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8085 (http) with context path '/'
+2026-11-06T21:51:08.107-06:00  INFO 19352 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Started WorkerPocApplication in 8.57 seconds (process running for 9.968)
+2026-11-06T21:51:08.334-06:00  INFO 19352 --- [worker-poc] [           main] c.p.w.config.DeploymentConfigValidator   : Configuracion de despliegue validada: WorkerProperties{governor=MOCK, ingest=PUSH, store=MEMORY, reporter=MOCK, vertex.model=gemini-2.5-flash, vertex.region=us-central1, vertex.promptVersion=governor-v0.2, vertex.timeout=PT5S, jdbc.urlConfigured=false, report.baseUrlConfigured=false, maxUnknownRetries=3, maxReportAttempts=5}
+2026-11-06T21:51:08.556-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-06T21:51:08.558-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-06T21:51:08.561-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-11-06T21:51:10.084-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-3] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0012345678] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+2026-11-06T21:51:10.085-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-3] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0012345678] Resultado para boleto 0012345678: found=true, awarded=true, provenance=SYNTHETIC, source=SEED
+2026-11-06T21:51:10.480-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-4] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0012345678] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+2026-11-06T21:51:10.481-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-4] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0012345678] Resultado para boleto 0012345678: found=true, awarded=true, provenance=SYNTHETIC, source=SEED
+2026-11-06T21:51:10.628-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-5] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0011111111] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0011111111
+2026-11-06T21:51:10.629-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-5] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0011111111] Resultado para boleto 0011111111: found=true, awarded=false, provenance=SYNTHETIC, source=SEED
+2026-11-06T21:51:10.708-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-6] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0011111111] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0011111111
+2026-11-06T21:51:10.709-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-6] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0011111111] Resultado para boleto 0011111111: found=true, awarded=false, provenance=SYNTHETIC, source=SEED
+2026-11-06T21:51:10.852-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-7] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-9999999999] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=9999999999
+2026-11-06T21:51:10.853-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-7] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-9999999999] Resultado para boleto 9999999999: found=false, awarded=false, provenance=SYNTHETIC, source=SEED
+2026-11-06T21:51:10.942-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-8] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-9999999999] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=9999999999
+2026-11-06T21:51:10.943-06:00  INFO 19352 --- [worker-poc] [nio-8085-exec-8] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-9999999999] Resultado para boleto 9999999999: found=false, awarded=false, provenance=SYNTHETIC, source=SEED

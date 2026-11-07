@@ -1,0 +1,787 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< com.pagaduriasintetica:worker-poc >------------------
+[INFO] Building worker-poc 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ worker-poc ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 8 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ worker-poc ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 88 source files with javac [debug parameters release 21] to target\classes
+[INFO] /C:/Users/steve/Documents/Agentes y Vertex/worker-poc/src/main/java/com/pagaduriasintetica/worker/governor/VertexGovernor.java: C:\Users\steve\Documents\Agentes y Vertex\worker-poc\src\main\java\com\pagaduriasintetica\worker\governor\VertexGovernor.java uses or overrides a deprecated API.
+[INFO] /C:/Users/steve/Documents/Agentes y Vertex/worker-poc/src/main/java/com/pagaduriasintetica/worker/governor/VertexGovernor.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ worker-poc ---
+[INFO] skip non existing resourceDirectory C:\Users\steve\Documents\Agentes y Vertex\worker-poc\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ worker-poc ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 26 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] /C:/Users/steve/Documents/Agentes y Vertex/worker-poc/src/test/java/com/pagaduriasintetica/worker/worker/ConcurrentRedeliveryTest.java: C:\Users\steve\Documents\Agentes y Vertex\worker-poc\src\test\java\com\pagaduriasintetica\worker\worker\ConcurrentRedeliveryTest.java uses or overrides a deprecated API.
+[INFO] /C:/Users/steve/Documents/Agentes y Vertex/worker-poc/src/test/java/com/pagaduriasintetica/worker/worker/ConcurrentRedeliveryTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ worker-poc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.pagaduriasintetica.worker.agent.TicketAgentControllerTest
+21:48:18.138 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 9.1.3.Final
+21:48:18.973 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:18.976 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:18.987 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 8 ms
+21:48:19.522 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent WS_ERROR traceId=corr-502: WS caido
+21:48:19.744 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:19.745 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:19.745 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:19.871 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:19.872 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:19.872 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:19.914 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent DATABASE_UNAVAILABLE traceId=corr-503: WS de tickets sin base de datos disponible (503 DATABASE_UNAVAILABLE)
+21:48:19.937 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:19.938 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:19.938 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:19.998 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:19.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:19.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.026 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent WS_TIMEOUT traceId=corr-504: Timeout del WS de tickets
+21:48:20.050 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.051 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.051 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.104 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.131 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent WS_UNAVAILABLE traceId=corr-503-generico: WS de tickets no disponible (503 UPSTREAM_BUSY)
+21:48:20.152 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.152 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.152 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.204 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.205 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:20.410 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.412 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.412 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.538 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.538 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 2 ms
+21:48:20.587 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.587 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.588 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.610 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent DATA_INTEGRITY_ERROR traceId=corr-502-integridad: WS de tickets reporta inconsistencia de datos (502 DATA_INTEGRITY_ERROR)
+21:48:20.647 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.647 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.648 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:20.668 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent INVALID_RESPONSE traceId=fd032447-1f2e-491c-8f92-da66cb05f149: NOT_AWARDED inconsistente con prize
+21:48:20.690 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.690 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.690 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:20.710 [main] WARN com.pagaduriasintetica.worker.agent.TicketAgentAdvice -- TicketAgent WS_TIMEOUT traceId=df98b5d4-6ab8-4cdf-9708-f47c671e4005: Timeout del WS de tickets
+21:48:20.729 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:20.730 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:20.730 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.182 s -- in com.pagaduriasintetica.worker.agent.TicketAgentControllerTest
+[INFO] Running com.pagaduriasintetica.worker.agent.TicketAgentTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.072 s -- in com.pagaduriasintetica.worker.agent.TicketAgentTest
+[INFO] Running com.pagaduriasintetica.worker.agent.tool.HttpTicketQueryToolTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.490 s -- in com.pagaduriasintetica.worker.agent.tool.HttpTicketQueryToolTest
+[INFO] Running com.pagaduriasintetica.worker.agent.tool.TicketAgentHttpModeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.365 s -- in com.pagaduriasintetica.worker.agent.tool.TicketAgentHttpModeTest
+[INFO] Running com.pagaduriasintetica.worker.config.WorkerPropertiesTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.061 s -- in com.pagaduriasintetica.worker.config.WorkerPropertiesTest
+[INFO] Running com.pagaduriasintetica.worker.contract.PaymentCommittedContractSerializationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.067 s -- in com.pagaduriasintetica.worker.contract.PaymentCommittedContractSerializationTest
+[INFO] Running com.pagaduriasintetica.worker.contract.ticket.TicketQueryResultSerializationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.061 s -- in com.pagaduriasintetica.worker.contract.ticket.TicketQueryResultSerializationTest
+[INFO] Running com.pagaduriasintetica.worker.governor.VertexGovernorTest
+21:48:22.967 [main] ERROR com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex configuracion erronea (403 denied) para operationId=op-v-sanit-cfg
+com.pagaduriasintetica.worker.governor.VertexCallException: permiso denegado
+	at com.pagaduriasintetica.worker.governor.VertexGovernorTest.mensajesNoExponenSecretos(VertexGovernorTest.java:213)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+21:48:22.992 [main] WARN com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex veto operationId=op-v-veto reason=La traduccion anula un pago de premio confirmado.
+21:48:23.002 [main] ERROR com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex configuracion erronea (401 config) para operationId=op-v-cfg-401
+com.pagaduriasintetica.worker.governor.VertexCallException: falla-401
+	at com.pagaduriasintetica.worker.governor.VertexGovernorTest.fallosDeConfiguracionLanzanGovernorConfigurationException(VertexGovernorTest.java:191)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+21:48:23.004 [main] ERROR com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex configuracion erronea (403 config) para operationId=op-v-cfg-403
+com.pagaduriasintetica.worker.governor.VertexCallException: falla-403
+	at com.pagaduriasintetica.worker.governor.VertexGovernorTest.fallosDeConfiguracionLanzanGovernorConfigurationException(VertexGovernorTest.java:191)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+21:48:23.006 [main] ERROR com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex configuracion erronea (404 config) para operationId=op-v-cfg-404
+com.pagaduriasintetica.worker.governor.VertexCallException: falla-404
+	at com.pagaduriasintetica.worker.governor.VertexGovernorTest.fallosDeConfiguracionLanzanGovernorConfigurationException(VertexGovernorTest.java:191)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+.\mvnw.cmd : Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future 
+releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: 
+https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+At line:4 char:1
++ .\mvnw.cmd test 2>&1 | Out-File -FilePath "docs\evidencia\2026-11-06\ ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Mockito is curr...ockito.html#0.3:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap 
+classpath has been appended
+WARNING: A Java agent has been loaded dynamically 
+(C:\Users\steve\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.11\byte-buddy-agent-1.18.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+21:48:25.360 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-v-veto-e2e traceId=5ad5c6de-1082-4148-8a57-c3d40d6dcc60 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:25.371 [main] WARN com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex veto operationId=op-v-veto-e2e reason=La traduccion anula un pago de premio confirmado.
+21:48:25.378 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Governor enrichment ATTACHED operationId=op-v-veto-e2e decision=REJECTED
+21:48:25.542 [main] WARN com.pagaduriasintetica.worker.governor.VertexGovernor -- Vertex inesperado para operationId=op-v-unexpected
+java.lang.IllegalStateException: falla inesperada del adaptador
+	at com.pagaduriasintetica.worker.governor.VertexGovernorTest.excepcionNoPrevistaDelClienteEsTransitoria(VertexGovernorTest.java:202)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.682 s -- in com.pagaduriasintetica.worker.governor.VertexGovernorTest
+[INFO] Running com.pagaduriasintetica.worker.ticket.SybaseAmountNormalizationTest
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.670 s -- in com.pagaduriasintetica.worker.ticket.SybaseAmountNormalizationTest
+[INFO] Running com.pagaduriasintetica.worker.ticket.SybaseTicketRealTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.001 s -- in com.pagaduriasintetica.worker.ticket.SybaseTicketRealTest
+[INFO] Running com.pagaduriasintetica.worker.ticket.TicketAgentWithCarlosWsContractTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.160 s -- in com.pagaduriasintetica.worker.ticket.TicketAgentWithCarlosWsContractTest
+[INFO] Running com.pagaduriasintetica.worker.ticket.TicketLookupControllerTest
+21:48:26.535 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:26.535 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:26.535 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:26.560 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:26.561 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:26.561 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:26.853 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:26.854 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:26.854 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:26.913 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=trace-integrity-001] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+21:48:26.944 [main] ERROR com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=trace-integrity-001] Inconsistencia de datos en Sybase: prize_amount invßlido o no normalizable
+21:48:27.005 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.005 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.005 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.031 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.031 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.031 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.042 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=trace-fail-closed-001] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+21:48:27.042 [main] ERROR com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=trace-fail-closed-001] Fallo seguro (Fail Closed - Pool Sybase no disponible): Pool Sybase no disponible (pool no inicializado). Detalle: Sybase JDBC deshabilitado por configuraci≤n (app.sybase.ticket.enabled=false)
+21:48:27.076 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.108 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.108 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.109 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:27.118 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=smoke-test-carlos-001] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+21:48:27.120 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=smoke-test-carlos-001] Resultado para boleto 0012345678: found=true, awarded=true, provenance=SYNTHETIC, source=SEED
+21:48:27.157 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.157 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.157 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.179 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.179 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.179 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.189 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=corr-not-awarded] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0011111111
+21:48:27.190 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=corr-not-awarded] Resultado para boleto 0011111111: found=true, awarded=false, provenance=SYNTHETIC, source=SEED
+21:48:27.226 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.228 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.229 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:27.249 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.249 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.250 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:27.264 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=smoke-test-carlos-002] Procesando consulta de boleto: lottery=LOTRA, draw=G13PLAN26-LOTRA-01, ticket=0012345678
+21:48:27.264 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=smoke-test-carlos-002] Resultado para boleto 0012345678: found=true, awarded=true, provenance=SYNTHETIC, source=SEED
+21:48:27.292 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.292 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.292 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.312 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.343 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.343 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.344 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:27.363 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.363 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.363 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+21:48:27.371 [main] WARN com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=33040cea-4103-4f11-aadb-e604f1ebbd9e] Consulta de boleto rechazada por datos incompletos
+21:48:27.396 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.396 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 2 ms
+21:48:27.415 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+21:48:27.416 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+21:48:27.417 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+21:48:27.425 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=e15ad9b0-1c05-4e72-b7b0-2c065175e752] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=9999999999
+21:48:27.425 [main] INFO com.pagaduriasintetica.worker.ticket.TicketLookupController -- [correlationId=e15ad9b0-1c05-4e72-b7b0-2c065175e752] Resultado para boleto 9999999999: found=false, awarded=false, provenance=SYNTHETIC, source=SEED
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.957 s -- in com.pagaduriasintetica.worker.ticket.TicketLookupControllerTest
+[INFO] Running com.pagaduriasintetica.worker.worker.BranchingCoverageTest
+21:48:27.578 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rej-9 traceId=867fe19e-babc-446e-b377-108b6c77747e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.610 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-inv traceId=f55557dc-cc47-4264-a3b6-3dfdd40eb051 correlationId=corr-007 eventId=evt-007 deliveryAttempt=1 payloadHash=686b9a3d3875b3dfb009014460db9cd0a1f27f4c8c011bcbff224fe2d9deb580
+21:48:27.632 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-xtr traceId=4327b592-05e0-4b80-98c0-94ce5dda3c41 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.655 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Pre-filter REJECTED operationId=op-rej-3 aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.223 s -- in com.pagaduriasintetica.worker.worker.BranchingCoverageTest
+[INFO] Running com.pagaduriasintetica.worker.worker.CommitMeansSuccessTest
+21:48:27.690 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-timeout traceId=05b7712d-4daa-42ec-85d6-e4a7389b0956 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.691 [main] WARN com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-timeout traceId=05b7712d-4daa-42ec-85d6-e4a7389b0956 Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex deadline exceeded (timeout=10s)
+21:48:27.716 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-post-bug traceId=102cc332-164b-4838-b67c-b179d99306a0 correlationId=corr-001 eventId=evt-001 deliveryAttempt=3 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.756 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-post-bug traceId=102cc332-164b-4838-b67c-b179d99306a0 post-commit failure at delivery 3 of 3, Sybase commit PRESERVED, report blocked, manual action required: java.lang.IllegalStateException: bug en el cliente de reporte
+21:48:27.777 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-func-2 traceId=eeee10f7-1f3a-48c7-b031-4bf46d0d6c69 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.781 [main] WARN com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-func-2 Governor response invalid -> functional quarantine: com.pagaduriasintetica.worker.governor.GovernorInvalidResponseException: respuesta fuera de la whitelist del catalogo
+21:48:27.806 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-fail traceId=9c0dba68-d201-43db-b07a-ad63f3bae798 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.829 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=46d38042-de3a-4dcb-b3ee-83683ad2d309 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.833 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=46d38042-de3a-4dcb-b3ee-83683ad2d309 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug en el traductor
+21:48:27.835 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=8d004e67-8382-4ecd-98de-41466b4cbcd9 correlationId=corr-001 eventId=evt-001 deliveryAttempt=2 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.844 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=8d004e67-8382-4ecd-98de-41466b4cbcd9 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug en el traductor
+21:48:27.847 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-bug traceId=4df94a95-9a00-4981-9675-e7a68e59e0dd correlationId=corr-001 eventId=evt-001 deliveryAttempt=3 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.848 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-bug traceId=4df94a95-9a00-4981-9675-e7a68e59e0dd unknown failure exhausted 3 attempts, technical quarantine (no commit happened): java.lang.IllegalStateException: bug en el traductor
+21:48:27.869 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-blocked traceId=e5cfd9ba-6e2c-4f0e-ae46-7532532e2baa correlationId=corr-001 eventId=evt-001 deliveryAttempt=3 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:27.869 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-rep-blocked report failed at delivery 3 of 3: Sybase commit PRESERVED, report blocked, manual action required: Report failed: endpoint caido de forma permanente
+21:48:27.898 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-reject traceId=e3ef6c46-1d57-4745-8a37-90d2cace0b9c correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=d747b086cb715ad23795a5ca6bdc2ceeffd9d881119b4c38e5b5b55d8f5207a6
+21:48:28.081 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-store-fail traceId=ea6705ae-9c58-4b66-9ef1-aaaf4ebf650d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:28.084 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-store-fail traceId=ea6705ae-9c58-4b66-9ef1-aaaf4ebf650d unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: No OperationState reserved for op-store-fail
+21:48:28.103 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-retry traceId=8bf64938-0978-405a-b6fd-7ac7d06ee24f correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:28.105 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-rep-retry traceId=c16dec6e-e0e5-43b1-b14a-54c210485926 correlationId=corr-001 eventId=evt-001 deliveryAttempt=2 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:28.141 [main] INFO com.pagaduriasintetica.worker.worker.WorkerService -- Worker received operationId=op-pre-retry traceId=44823c8f-b6c6-4ec9-9703-6e2eacc1b570 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+21:48:28.143 [main] ERROR com.pagaduriasintetica.worker.worker.WorkerService -- operationId=op-pre-retry traceId=44823c8f-b6c6-4ec9-9703-6e2eacc1b570 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: bug transitorio
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.482 s -- in com.pagaduriasintetica.worker.worker.CommitMeansSuccessTest
+[INFO] Running com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+21:48:28.357 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest]: ConcurrentRedeliveryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:48:28.814 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+21:48:28.957 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest]: ConcurrentRedeliveryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:48:28.961 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.1)
+
+2026-11-06T21:48:30.197-06:00  INFO 13636 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : Starting ConcurrentRedeliveryTest using Java 21.0.6 with PID 13636 (started by steve in C:\Users\steve\Documents\Agentes y Vertex\worker-poc)
+2026-11-06T21:48:30.200-06:00  INFO 13636 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T21:48:34.771-06:00  INFO 13636 --- [worker-poc] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-11-06T21:48:34.964-06:00  INFO 13636 --- [worker-poc] [           main] c.p.w.worker.ConcurrentRedeliveryTest    : Started ConcurrentRedeliveryTest in 5.808 seconds (process running for 20.476)
+2026-11-06T21:48:35.216-06:00  INFO 13636 --- [worker-poc] [           main] c.p.w.config.DeploymentConfigValidator   : Configuracion de despliegue validada: WorkerProperties{governor=MOCK, ingest=PUSH, store=MEMORY, reporter=MOCK, vertex.model=gemini-2.5-flash, vertex.region=us-central1, vertex.promptVersion=governor-v0.2, vertex.timeout=PT5S, jdbc.urlConfigured=false, report.baseUrlConfigured=false, maxUnknownRetries=3, maxReportAttempts=5}
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-5] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-123 traceId=d0bdf965-72ee-42d0-8f23-9d2c5cb12a77 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ol-25-thread-11] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-129 traceId=acf27435-0b1f-4a0d-a80d-be3e935fa9ad correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-8] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-126 traceId=f8edace4-c20c-4ab1-9825-face4ed6370c correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-3] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-121 traceId=d4df6b47-c199-4c3b-876a-1c3cf8e20490 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-2] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-120 traceId=9e548026-4f63-428d-b077-654a9062b13d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.299-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-6] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-124 traceId=ab5bd235-4a9e-4b6d-a089-4e3fc55ca456 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-9] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-127 traceId=2c02bb2d-74b1-45f1-8e7e-35207c3a688b correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.299-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-1] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-119 traceId=311db02a-59ae-4a72-8e1e-7faccd912cd6 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ol-25-thread-12] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-130 traceId=04c733a1-1d66-4b91-a025-e3f7579cd4b8 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.299-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-4] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-122 traceId=dde08434-0c27-4141-aa57-89707a2d74d7 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.298-06:00  INFO 13636 --- [worker-poc] [ool-25-thread-7] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-125 traceId=9e59706b-1dda-489f-b8f2-279f4fba3186 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.300-06:00  INFO 13636 --- [worker-poc] [ol-25-thread-10] c.p.worker.worker.WorkerService          : Worker received operationId=op-par-128 traceId=b297849d-cf71-412c-9a1c-988a345b82ff correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.370-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-3 traceId=c0b72d48-7118-4657-be00-fdea03dcb2a8 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-5] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=77a260f1-aac5-40ff-a462-ad2ed99e0750 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-4] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=3666ca45-587c-4561-880d-944679d064d2 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-7] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=4b4762b1-a568-4f6c-b364-1a2b96353f89 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-3] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=04031865-7427-492b-b8db-8e1df397ee31 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-11] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=1ba94c5b-13e6-4dce-b151-d56304b1417d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-10] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=31e1b44d-3953-446b-8aec-f21742364efa correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.458-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-15] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=13f20aea-0acc-490b-81fa-9c0ac28fce3e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-13] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=cd982c2c-41bb-4257-9454-91b9bc85d88e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-14] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=6891eba1-5a86-4207-b865-73d90e9851f5 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-12] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=503dc6a2-4d1b-4e18-ab5e-ed32e9a7b31f correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-6] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=33c79525-a07f-4801-9b13-2c2c828e40c5 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-1] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=4a4bdf0e-2ec7-46fd-958f-87ab2a7cafc5 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-2] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=b54df3b8-b900-4990-82b5-03273edcea5c correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-8] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=0fb03215-91f2-42f8-8ea0-569cbf882e69 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.459-06:00  INFO 13636 --- [worker-poc] [ool-28-thread-9] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=6ec1f3e8-d29d-423d-899e-22518eede84a correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.460-06:00  INFO 13636 --- [worker-poc] [ol-28-thread-16] c.p.worker.worker.WorkerService          : Worker received operationId=op-conc-1 traceId=69b0e2eb-6b79-4d79-93d2-eb34cc490055 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.573-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-2 traceId=9b484a57-5b57-4957-b54e-3f3a81ce8470 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.617-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-lease-1 traceId=f6aeb36e-b910-4fda-9d61-d0d3c7ddaff6 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.539 s -- in com.pagaduriasintetica.worker.worker.ConcurrentRedeliveryTest
+[INFO] Running com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-11-06T21:48:35.737-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.DemoEvidenceTest]: DemoEvidenceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:35.745-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-11-06T21:48:35.749-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.DemoEvidenceTest]: DemoEvidenceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:35.762-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+2026-11-06T21:48:35.792-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=26d40d80-c326-46b6-bcd8-e14b68a7479f correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.806-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=9565d379-0ef6-4886-92c4-1e4ef985527c correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.808-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=5c76e3d7-a89b-40d6-944c-6ef14f20bd09 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.809-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-flight traceId=57db2a8f-7f61-4099-b943-437d98e12a66 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.812-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=564aa5b7-e7d9-498b-9d20-f9ac09e232b8 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.814-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=528cb00f-42d0-4ff0-91a1-57eadafff897 correlationId=corr-002 eventId=evt-001 deliveryAttempt=1 payloadHash=48c8153e83b1d1fd565d15977e18aad464c8247b1b23e7890a6eca10299fc08b
+2026-11-06T21:48:35.814-06:00  WARN 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-001 reused with different PAYLOAD_HASH -> quarantine
+2026-11-06T21:48:35.815-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-3 aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+2026-11-06T21:48:35.817-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-3b aggregateType=prizes.payment eventType=PAYMENT_CANCELLED
+2026-11-06T21:48:35.821-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-hall traceId=94f1edde-f99d-48ab-b525-8c1701cfe9a5 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.823-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-doubt traceId=30b5bb43-8751-4c72-904c-1b5f881dcc03 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.828-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-retry traceId=31632156-6690-4266-897b-7ad618bfc278 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.829-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-bad traceId=27265dc7-bc03-454f-8710-a2b1381111bc correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.836-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rej-9 traceId=ac2b736d-1705-413b-bb35-9979247df8eb correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.851-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-xtr traceId=366e6e43-ff53-4b48-91ca-d4678b03e765 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.257 s -- in com.pagaduriasintetica.worker.worker.DemoEvidenceTest
+[INFO] Running com.pagaduriasintetica.worker.worker.GovernorFailureClassificationTest
+2026-11-06T21:48:35.990-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-timeout traceId=30c64b0a-90e7-48a4-bedb-ab71388b14a2 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:35.992-06:00  WARN 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-timeout traceId=30c64b0a-90e7-48a4-bedb-ab71388b14a2 Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex deadline exceeded (30s)
+2026-11-06T21:48:36.007-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-invalid traceId=02adf2d8-e972-4768-ab5b-48439025e0db correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.009-06:00  WARN 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-invalid Governor response invalid -> functional quarantine: com.pagaduriasintetica.worker.governor.GovernorInvalidResponseException: Respuesta no parseable como GovernorContract
+2026-11-06T21:48:36.026-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-reclaim traceId=c48fdd20-b6c1-4692-b0ad-7e36e5c60f3b correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.028-06:00  WARN 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-reclaim traceId=c48fdd20-b6c1-4692-b0ad-7e36e5c60f3b Governor unavailable: com.pagaduriasintetica.worker.governor.GovernorUnavailableException: Vertex 503 UNAVAILABLE
+2026-11-06T21:48:36.030-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-reclaim traceId=51af3882-968a-4aaf-bcbe-5dfaa508f2c0 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.046-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-motivo traceId=a578a88d-fb9a-4107-876b-1fde615eaa9d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.049-06:00 ERROR 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-motivo traceId=a578a88d-fb9a-4107-876b-1fde615eaa9d unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: detalle-interno
+2026-11-06T21:48:36.065-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-config traceId=0fa21b7b-3c30-4b12-adb1-ed6bbd2d5b3e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.068-06:00 ERROR 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-config Governor configuration failure: com.pagaduriasintetica.worker.governor.GovernorConfigurationException: Credential not authorized for project
+2026-11-06T21:48:36.086-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-unexpected traceId=ecee50e1-c18e-4e24-95eb-7302eebb684e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.088-06:00 ERROR 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-unexpected traceId=ecee50e1-c18e-4e24-95eb-7302eebb684e unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: Falla inesperada del adaptador
+2026-11-06T21:48:36.101-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-terminal traceId=c41a1a79-4fe9-403e-bcc8-449f37fb4b1d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.103-06:00 ERROR 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-terminal Governor configuration failure: com.pagaduriasintetica.worker.governor.GovernorConfigurationException: permission denied
+2026-11-06T21:48:36.105-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-terminal traceId=e8f4fc3a-19b4-4fce-9643-f2d638356625 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.119-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-g4-tx traceId=322dcead-4840-4278-ab9d-2aef39f302e8 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.121-06:00 ERROR 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-g4-tx traceId=322dcead-4840-4278-ab9d-2aef39f302e8 unhandled worker failure, marking RETRYABLE: java.lang.IllegalStateException: Falla del traductor
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.148 s -- in com.pagaduriasintetica.worker.worker.GovernorFailureClassificationTest
+[INFO] Running com.pagaduriasintetica.worker.worker.OperationStateMachineTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in com.pagaduriasintetica.worker.worker.OperationStateMachineTest
+[INFO] Running com.pagaduriasintetica.worker.worker.PayloadHasherTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.pagaduriasintetica.worker.worker.PayloadHasherTest
+[INFO] Running com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-11-06T21:48:36.166-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.WorkerPipelineTest]: WorkerPipelineTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:36.171-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-11-06T21:48:36.172-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.worker.WorkerPipelineTest]: WorkerPipelineTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:36.175-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+2026-11-06T21:48:36.187-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej aggregateType=payroll_secret eventType=PAYMENT_COMMITTED
+2026-11-06T21:48:36.222-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-jdbc traceId=82834e57-9c98-4a9b-b7a5-dce76376e18b correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.249-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=26fbd855-1f7d-493d-9342-738348fbb8e3 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.252-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=5f6f04ac-96c2-432d-aa4e-2cc0b1d71550 correlationId=corr-002 eventId=evt-001 deliveryAttempt=1 payloadHash=48c8153e83b1d1fd565d15977e18aad464c8247b1b23e7890a6eca10299fc08b
+2026-11-06T21:48:36.253-06:00  WARN 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-001 reused with different PAYLOAD_HASH -> quarantine
+2026-11-06T21:48:36.272-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-inv traceId=b71d7221-575b-4465-9107-e83306c48062 correlationId=corr-7 eventId=evt-7 deliveryAttempt=1 payloadHash=bffe2abc1f05e12268ce7849946e5a8cc9befd760144511595045051ed03a569
+2026-11-06T21:48:36.282-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-flight traceId=3a53c19c-9fb0-49b5-94bd-543820601443 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.290-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-hall traceId=caeefd98-de99-443c-81da-1f1ca89c2a45 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.299-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-12 traceId=0469896e-ac57-4c72-8eb6-999fd33c0146 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.314-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-suc traceId=cb9019b0-6707-4f2e-8adb-b5b6e9ff4ffc correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.316-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-suc traceId=b761bad3-4abd-4b9d-a6df-3c638b82ab09 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.324-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-retry traceId=9679ddab-c2de-451c-a32d-9cc668d2a2df correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.334-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-bad traceId=ca5ba5a5-9f28-4559-a023-fef6dfbfbf7e correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.342-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=e2c5b45a-fa94-4485-9976-caa47d272b65 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.345-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=4b88558f-1325-4672-bc36-73e45b21929a correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.371-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-conf traceId=9fb13fa4-1e41-44da-816b-7f38d16a87bd correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.371-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : operationId=op-conf report CONFLICT (already reported), no JDBC re-run
+2026-11-06T21:48:36.380-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-unk traceId=29d27cc8-8d37-4b25-ab48-0f83cf83f2f3 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.384-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-unk traceId=9f29c09a-9d5b-4822-ae3c-9d1a631ab78d correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.392-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-001 traceId=3aeff822-31b5-4924-b1db-d2492fe8a5a2 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.402-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rep traceId=36add654-47fa-4a41-a162-e778d3f91013 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.404-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-rep traceId=035e6dee-1989-467d-8cd8-0365ae9e70c7 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.420-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Worker received operationId=op-doubt traceId=42d6c3a6-9c65-48c9-bc18-eeffec9a3f47 correlationId=corr-001 eventId=evt-001 deliveryAttempt=1 payloadHash=0fd5240accd7b41a9d55d95567eb79b0f87a9776c0396a5f888d9c7a99c246a8
+2026-11-06T21:48:36.429-06:00  INFO 13636 --- [worker-poc] [           main] c.p.worker.worker.WorkerService          : Pre-filter REJECTED operationId=op-rej-2 aggregateType=prizes.payment eventType=PAYMENT_CANCELLED
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.277 s -- in com.pagaduriasintetica.worker.worker.WorkerPipelineTest
+[INFO] Running com.pagaduriasintetica.worker.WorkerPocApplicationTests
+2026-11-06T21:48:36.445-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.WorkerPocApplicationTests]: WorkerPocApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:36.481-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.WorkerPocApplicationTests
+2026-11-06T21:48:36.484-06:00  INFO 13636 --- [worker-poc] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pagaduriasintetica.worker.WorkerPocApplicationTests]: WorkerPocApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-06T21:48:36.487-06:00  INFO 13636 --- [worker-poc] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pagaduriasintetica.worker.WorkerPocApplication for test class com.pagaduriasintetica.worker.WorkerPocApplicationTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in com.pagaduriasintetica.worker.WorkerPocApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 193, Failures: 0, Errors: 0, Skipped: 1
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  39.388 s
+[INFO] Finished at: 2026-11-06T21:48:36-06:00
+[INFO] ------------------------------------------------------------------------

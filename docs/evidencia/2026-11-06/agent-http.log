@@ -1,0 +1,24 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.1)
+
+2026-11-06T21:50:44.343-06:00  INFO 17536 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Starting WorkerPocApplication v0.0.1-SNAPSHOT using Java 21.0.6 with PID 17536 (C:\Users\steve\Documents\Agentes y Vertex\worker-poc\target\worker-poc-0.0.1-SNAPSHOT.jar started by steve in C:\Users\steve\Documents\Agentes y Vertex\worker-poc)
+2026-11-06T21:50:44.372-06:00  INFO 17536 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T21:50:49.090-06:00  INFO 17536 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8082 (http)
+2026-11-06T21:50:49.133-06:00  INFO 17536 --- [worker-poc] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-06T21:50:49.135-06:00  INFO 17536 --- [worker-poc] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.24]
+2026-11-06T21:50:49.232-06:00  INFO 17536 --- [worker-poc] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 4673 ms
+2026-11-06T21:50:52.570-06:00  INFO 17536 --- [worker-poc] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-11-06T21:50:53.012-06:00  INFO 17536 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8082 (http) with context path '/'
+2026-11-06T21:50:53.033-06:00  INFO 17536 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Started WorkerPocApplication in 10.118 seconds (process running for 11.707)
+2026-11-06T21:50:53.582-06:00  INFO 17536 --- [worker-poc] [           main] c.p.w.config.DeploymentConfigValidator   : Configuracion de despliegue validada: WorkerProperties{governor=MOCK, ingest=PUSH, store=MEMORY, reporter=MOCK, vertex.model=gemini-2.5-flash, vertex.region=us-central1, vertex.promptVersion=governor-v0.2, vertex.timeout=PT5S, jdbc.urlConfigured=false, report.baseUrlConfigured=false, maxUnknownRetries=3, maxReportAttempts=5}
+2026-11-06T21:50:54.699-06:00  INFO 17536 --- [worker-poc] [nio-8082-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-06T21:50:54.700-06:00  INFO 17536 --- [worker-poc] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-06T21:50:54.703-06:00  INFO 17536 --- [worker-poc] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-11-06T21:51:31.379-06:00  WARN 17536 --- [worker-poc] [nio-8082-exec-6] c.p.worker.agent.TicketAgentAdvice       : TicketAgent WS_ERROR traceId=corr-neg-20261106215131: Fallo de red al consultar WS de tickets

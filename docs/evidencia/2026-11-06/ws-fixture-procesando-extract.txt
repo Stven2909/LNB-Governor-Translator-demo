@@ -1,0 +1,3 @@
+﻿2026-11-06T21:51:26.665-06:00  INFO 12988 --- [worker-poc] [nio-8085-exec-2] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0012345678] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0012345678
+2026-11-06T21:51:27.027-06:00  INFO 12988 --- [worker-poc] [nio-8085-exec-4] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-0011111111] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=0011111111
+2026-11-06T21:51:27.223-06:00  INFO 12988 --- [worker-poc] [nio-8085-exec-5] c.p.w.ticket.TicketLookupController      : [correlationId=corr-e2e-9999999999] Procesando consulta de boleto: lottery=LNB, draw=2026-10-15, ticket=9999999999

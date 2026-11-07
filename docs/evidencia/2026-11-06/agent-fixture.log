@@ -1,0 +1,23 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.1)
+
+2026-11-06T21:50:44.077-06:00  INFO 248 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Starting WorkerPocApplication v0.0.1-SNAPSHOT using Java 21.0.6 with PID 248 (C:\Users\steve\Documents\Agentes y Vertex\worker-poc\target\worker-poc-0.0.1-SNAPSHOT.jar started by steve in C:\Users\steve\Documents\Agentes y Vertex\worker-poc)
+2026-11-06T21:50:44.090-06:00  INFO 248 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T21:50:48.970-06:00  INFO 248 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8083 (http)
+2026-11-06T21:50:49.024-06:00  INFO 248 --- [worker-poc] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-06T21:50:49.025-06:00  INFO 248 --- [worker-poc] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.24]
+2026-11-06T21:50:49.122-06:00  INFO 248 --- [worker-poc] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 4852 ms
+2026-11-06T21:50:52.170-06:00  INFO 248 --- [worker-poc] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-11-06T21:50:52.844-06:00  INFO 248 --- [worker-poc] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8083 (http) with context path '/'
+2026-11-06T21:50:52.871-06:00  INFO 248 --- [worker-poc] [           main] c.p.worker.WorkerPocApplication          : Started WorkerPocApplication in 10.078 seconds (process running for 11.453)
+2026-11-06T21:50:53.177-06:00  INFO 248 --- [worker-poc] [           main] c.p.w.config.DeploymentConfigValidator   : Configuracion de despliegue validada: WorkerProperties{governor=MOCK, ingest=PUSH, store=MEMORY, reporter=MOCK, vertex.model=gemini-2.5-flash, vertex.region=us-central1, vertex.promptVersion=governor-v0.2, vertex.timeout=PT5S, jdbc.urlConfigured=false, report.baseUrlConfigured=false, maxUnknownRetries=3, maxReportAttempts=5}
+2026-11-06T21:50:57.273-06:00  INFO 248 --- [worker-poc] [nio-8083-exec-4] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-06T21:50:57.275-06:00  INFO 248 --- [worker-poc] [nio-8083-exec-4] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-06T21:50:57.279-06:00  INFO 248 --- [worker-poc] [nio-8083-exec-4] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms

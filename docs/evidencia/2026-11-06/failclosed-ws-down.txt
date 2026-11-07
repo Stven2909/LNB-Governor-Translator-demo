@@ -1,0 +1,8 @@
+﻿
+=== Agente E3.2 fail-closed con WS caido ===
+fecha=2026-11-06T21:51:31.2750371-06:00
+agente=http://localhost:8082 correlacion=corr-neg-20261106215131
+Requisito: el WS debe estar DETENIDO. Si el agente responde 200, esta en FIXTURE.
+--- AGENTE 502
+{"traceId":"corr-neg-20261106215131","code":"WS_ERROR","message":"Fallo de red al consultar WS de tickets"}
+=== FAIL-CLOSED OK ===
