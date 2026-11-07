@@ -253,7 +253,9 @@ if ([string]::IsNullOrWhiteSpace($WsLogPath)) {
 } else {
     $log = Get-Content -LiteralPath $WsLogPath -ErrorAction SilentlyContinue
     foreach ($case in $cases) {
-        $needle = "correlationId=corr-e2e-$($case.Id)]"
+        # Solo la linea "Procesando": el controller tambien loguea "Resultado" con el
+        # mismo correlationId y contarla duplicaria el numero esperado.
+        $needle = "correlationId=corr-e2e-$($case.Id)] Procesando consulta de boleto"
         $count = ($log | Select-String -SimpleMatch $needle | Measure-Object).Count
         if ($count -ne 2) {
             Write-Trace ("FAIL WS log {0}: {1} apariciones de {2} (esperadas 2: runner + agente)" -f `
