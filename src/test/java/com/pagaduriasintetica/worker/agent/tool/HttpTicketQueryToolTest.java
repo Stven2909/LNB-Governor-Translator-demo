@@ -1,6 +1,8 @@
 package com.pagaduriasintetica.worker.agent.tool;
 
 import com.pagaduriasintetica.worker.agent.exception.InvalidWsResponseException;
+import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityException;
+import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
@@ -20,7 +22,7 @@ class HttpTicketQueryToolTest {
 
     private static final String FOUND_BODY = """
             {"found":true,"awarded":true,"ticketNumber":"0012345678",
-             "prize":{"amount":"150.00","currency":"USD","category":"CASH"},
+             "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
              "collectionStatus":"PENDING","provenance":"SYNTHETIC"}
             """;
 
@@ -60,7 +62,7 @@ class HttpTicketQueryToolTest {
     /** El WS no declara procedencia: el adaptador debe usar la configurada, no inventarla. */
     private static final String FOUND_WITHOUT_PROVENANCE_BODY = """
             {"found":true,"awarded":true,"ticketNumber":"0012345678",
-             "prize":{"amount":"150.00","currency":"USD","category":"CASH"},
+             "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
              "collectionStatus":"PENDING"}
             """;
 
@@ -87,7 +89,7 @@ class HttpTicketQueryToolTest {
             assertTrue(response.found());
             assertTrue(response.awarded());
             assertEquals("0012345678", response.ticketNumber());
-            assertEquals("150.00", response.prize().amount());
+            assertEquals("50.00", response.prize().amount());
             assertEquals("SYNTHETIC", response.provenance());
 
             assertTrue(ws.lastRequestBody().contains("\"lotteryCode\":\"LNB\""));
@@ -241,6 +243,32 @@ class HttpTicketQueryToolTest {
             TicketWsException error = assertThrows(TicketWsException.class,
                     () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-500"));
             assertTrue(error.getMessage().contains("500"));
+        }
+    }
+
+    @Test
+    void error_503_del_ws_se_preserva_como_database_unavailable() throws Exception {
+        // MOCK: el WS dice que no puede consultar la base; no se degrada a 502 generico.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(
+                503, "{\"code\":\"DATABASE_UNAVAILABLE\",\"message\":\"sin pool\"}")) {
+            TicketDatabaseUnavailableException error = assertThrows(TicketDatabaseUnavailableException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-503"));
+
+            assertTrue(error.getMessage().contains("503"));
+            assertTrue(error.getMessage().contains("DATABASE_UNAVAILABLE"));
+        }
+    }
+
+    @Test
+    void error_502_del_ws_se_preserva_como_data_integrity() throws Exception {
+        // MOCK: el WS reporta inconsistencia de datos; debe conservar su codigo.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(
+                502, "{\"code\":\"DATA_INTEGRITY_ERROR\",\"message\":\"premio nulo\"}")) {
+            TicketDataIntegrityException error = assertThrows(TicketDataIntegrityException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-502"));
+
+            assertTrue(error.getMessage().contains("502"));
+            assertTrue(error.getMessage().contains("DATA_INTEGRITY_ERROR"));
         }
     }
 

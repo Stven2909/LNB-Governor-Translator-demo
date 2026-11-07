@@ -21,6 +21,9 @@ public final class CorrelationId {
     public static final String HEADER = "X-Correlation-Id";
     public static final String LEGACY_HEADER = "X-Request-Id";
 
+    /** Atributo donde el filtro deja el id resuelto para el resto de la peticion. */
+    static final String ATTRIBUTE = CorrelationId.class.getName() + ".value";
+
     private CorrelationId() {
     }
 
@@ -39,6 +42,26 @@ public final class CorrelationId {
     /** Igual que resolve, pero genera uno cuando el llamador no envio ninguno. */
     public static String resolveOrGenerate(HttpServletRequest request) {
         String value = resolve(request);
+        return value != null ? value : UUID.randomUUID().toString();
+    }
+
+    /**
+     * Id ya resuelto por {@link CorrelationIdFilter}. Si el filtro no participo (por ejemplo,
+     * una prueba con MockMvc standalone) cae al header y, si tampoco vino, genera uno.
+     */
+    public static String current(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object value = request.getAttribute(ATTRIBUTE);
+        if (value instanceof String text && StringUtils.hasText(text)) {
+            return text.trim();
+        }
+        return resolve(request);
+    }
+
+    public static String currentOrGenerate(HttpServletRequest request) {
+        String value = current(request);
         return value != null ? value : UUID.randomUUID().toString();
     }
 

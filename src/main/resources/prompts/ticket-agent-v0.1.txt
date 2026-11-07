@@ -33,5 +33,5 @@ Return a JSON object with:
 
 EXAMPLE
 Input: lotteryCode=LNB, drawNumber=2026-10-15, ticketNumber=0012345678, series=A, checkDigit=5
-Tool response: {found: true, awarded: true, ticketNumber: "0012345678", prize: {amount: "150.00", currency: "USD", category: "CASH"}, provenance: "SYNTHETIC"}
-Output: {result: "FOUND", prize: {amount: "150.00", currency: "USD", category: "CASH"}, message: "Boleto encontrado y premiado correctamente"}
+Tool response: {found: true, awarded: true, ticketNumber: "0012345678", prize: {amount: "50.00", currency: "USD", category: "CASH"}, provenance: "SYNTHETIC"}
+Output: {result: "FOUND", prize: {amount: "50.00", currency: "USD", category: "CASH"}, message: "Boleto encontrado y premiado correctamente"}

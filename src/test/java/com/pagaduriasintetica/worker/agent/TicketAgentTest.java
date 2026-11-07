@@ -25,7 +25,10 @@ class TicketAgentTest {
         TicketQueryResult result = agent.process(key, "test-001");
         assertEquals(TicketLookupStatus.FOUND, result.result());
         assertNotNull(result.prize());
-        assertEquals("150.00", result.prize().amount());
+        assertEquals("50.00", result.prize().amount());
+        assertEquals("USD", result.prize().currency());
+        assertEquals("CASH", result.prize().category());
+        assertEquals("PENDING", result.collectionStatus());
         assertEquals("test-001", result.traceId());
     }
 

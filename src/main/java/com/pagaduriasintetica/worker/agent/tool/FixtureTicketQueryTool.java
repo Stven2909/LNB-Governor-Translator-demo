@@ -18,7 +18,7 @@ public class FixtureTicketQueryTool implements TicketQueryTool {
     public FixtureTicketQueryTool() {
         fixtures.put("LNB-2026-10-15-0012345678", new TicketToolResponse(
                 true, true, "0012345678",
-                new PrizeInfo("150.00", "USD", "CASH"),
+                new PrizeInfo("50.00", "USD", "CASH"),
                 "PENDING",
                 "SYNTHETIC"
         ));

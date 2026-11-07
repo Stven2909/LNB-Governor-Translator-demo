@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pagaduriasintetica.worker.agent.exception.InvalidWsResponseException;
 import com.pagaduriasintetica.worker.agent.exception.TicketAgentException;
+import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityException;
+import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
@@ -116,7 +118,8 @@ public class HttpTicketQueryTool implements TicketQueryTool {
             }
             return withDefaults(response);
         } catch (RestClientResponseException e) {
-            if (e.getStatusCode().value() == 404) {
+            int status = e.getStatusCode().value();
+            if (status == 404) {
                 // Un 404 solo es NOT_FOUND si el WS lo dice con un payload de negocio.
                 // Un 404 de ruta equivocada no puede disfrazarse de "boleto no encontrado":
                 // eso reportaria un dato falso con procedencia real.
@@ -126,6 +129,19 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                 }
                 throw new TicketWsException(
                         "404 del WS sin payload de negocio (found=false): no se traduce a NOT_FOUND", e);
+            }
+            // El estado del WS es informacion de negocio, no un detalle de transporte: 503
+            // significa "no pude consultar" y 502 "el dato es inconsistente". Degradarlos a
+            // un 502 generico obligaria al llamador a adivinar lo que el WS ya dijo.
+            if (status == 503) {
+                throw new TicketDatabaseUnavailableException(
+                        "WS de tickets sin base de datos disponible (503"
+                                + codeSuffix(e.getResponseBodyAsString()) + ")", e);
+            }
+            if (status == 502) {
+                throw new TicketDataIntegrityException(
+                        "WS de tickets reporta inconsistencia de datos (502"
+                                + codeSuffix(e.getResponseBodyAsString()) + ")", e);
             }
             throw new TicketWsException("Error WS: " + e.getStatusCode(), e);
         } catch (ResourceAccessException e) {
@@ -166,6 +182,26 @@ public class HttpTicketQueryTool implements TicketQueryTool {
         } catch (JsonProcessingException e) {
             return null;
         }
+    }
+
+    /**
+     * Codigo de error declarado por el WS, para conservarlo en el mensaje sin volcar el
+     * cuerpo completo. Un cuerpo opaco no impide mapear el estado HTTP.
+     */
+    private static String codeSuffix(String body) {
+        if (!StringUtils.hasText(body)) {
+            return ")";
+        }
+        try {
+            JsonNode node = JSON.readTree(body);
+            JsonNode code = node == null ? null : node.get("code");
+            if (code != null && code.isTextual() && StringUtils.hasText(code.asText())) {
+                return " " + code.asText().trim() + ")";
+            }
+        } catch (JsonProcessingException ignored) {
+            // El estado HTTP ya es suficiente; no se inventa un codigo.
+        }
+        return ")";
     }
 
     /**

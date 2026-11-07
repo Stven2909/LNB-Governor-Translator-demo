@@ -21,7 +21,7 @@ class TicketAgentHttpModeTest {
 
     private static final String FOUND_BODY = """
             {"found":true,"awarded":true,"ticketNumber":"0012345678",
-             "prize":{"amount":"150.00","currency":"USD","category":"CASH"},
+             "prize":{"amount":"50.00","currency":"USD","category":"CASH"},
              "collectionStatus":"PENDING","provenance":"SYNTHETIC"}
             """;
 
@@ -55,7 +55,7 @@ class TicketAgentHttpModeTest {
             TicketQueryResult found = agent.process(
                     new TicketKey("LNB", "2026-10-15", "0012345678", "A", "5"), "http-001");
             assertEquals(TicketLookupStatus.FOUND, found.result());
-            assertEquals("150.00", found.prize().amount());
+            assertEquals("50.00", found.prize().amount());
             assertEquals("http-001", found.traceId());
 
             ws.respond(200, NOT_AWARDED_BODY);
