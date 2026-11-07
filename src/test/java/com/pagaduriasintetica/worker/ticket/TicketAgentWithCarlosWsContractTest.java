@@ -134,6 +134,7 @@ class TicketAgentWithCarlosWsContractTest {
         assertEquals("USD", result.prize().currency());
         assertEquals("CASH", result.prize().category());
         assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+        assertEquals("SEED", result.source());
         assertEquals("trace-contract-carlos-001", result.traceId());
     }
 
@@ -149,6 +150,7 @@ class TicketAgentWithCarlosWsContractTest {
         assertEquals(TicketLookupStatus.NOT_AWARDED, result.result());
         assertNull(result.prize());
         assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+        assertEquals("SEED", result.source());
     }
 
     @Test
@@ -163,5 +165,6 @@ class TicketAgentWithCarlosWsContractTest {
         assertEquals(TicketLookupStatus.NOT_FOUND, result.result());
         assertNull(result.prize());
         assertEquals(TicketProvenance.SYNTHETIC, result.provenance());
+        assertEquals("SEED", result.source());
     }
 }
