@@ -29,9 +29,10 @@ Return a JSON object with:
 - prize: {amount, currency, category} ONLY if result is FOUND
 - collectionStatus: string from WS (optional)
 - provenance: REAL or SYNTHETIC
+- source: SEED or SYBASE from WS (optional; omit if the WS doesn't send it)
 - message: descriptive text
 
 EXAMPLE
 Input: lotteryCode=LNB, drawNumber=2026-10-15, ticketNumber=0012345678, series=A, checkDigit=5
-Tool response: {found: true, awarded: true, ticketNumber: "0012345678", prize: {amount: "50.00", currency: "USD", category: "CASH"}, provenance: "SYNTHETIC"}
-Output: {result: "FOUND", prize: {amount: "50.00", currency: "USD", category: "CASH"}, message: "Boleto encontrado y premiado correctamente"}
+Tool response: {found: true, awarded: true, ticketNumber: "0012345678", prize: {amount: "50.00", currency: "USD", category: "CASH"}, provenance: "SYNTHETIC", source: "SEED"}
+Output: {result: "FOUND", prize: {amount: "50.00", currency: "USD", category: "CASH"}, collectionStatus: "PENDING", provenance: "SYNTHETIC", source: "SEED", message: "Boleto encontrado y premiado correctamente"}
