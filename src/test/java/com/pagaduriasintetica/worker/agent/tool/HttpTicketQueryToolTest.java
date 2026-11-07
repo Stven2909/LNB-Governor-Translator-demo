@@ -5,6 +5,7 @@ import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityExceptio
 import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
+import com.pagaduriasintetica.worker.agent.exception.TicketWsUnavailableException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
 import org.junit.jupiter.api.Test;
 
@@ -248,9 +249,9 @@ class HttpTicketQueryToolTest {
 
     @Test
     void error_503_del_ws_se_preserva_como_database_unavailable() throws Exception {
-        // MOCK: el WS dice que no puede consultar la base; no se degrada a 502 generico.
+        // MOCK: shape canonico del WS de Carlos ({"error":"..."}); no se degrada a 502.
         try (MockTicketWsServer ws = new MockTicketWsServer().respond(
-                503, "{\"code\":\"DATABASE_UNAVAILABLE\",\"message\":\"sin pool\"}")) {
+                503, "{\"error\":\"DATABASE_UNAVAILABLE\",\"message\":\"sin pool\"}")) {
             TicketDatabaseUnavailableException error = assertThrows(TicketDatabaseUnavailableException.class,
                     () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-503"));
 
@@ -260,15 +261,75 @@ class HttpTicketQueryToolTest {
     }
 
     @Test
-    void error_502_del_ws_se_preserva_como_data_integrity() throws Exception {
-        // MOCK: el WS reporta inconsistencia de datos; debe conservar su codigo.
+    void error_503_con_shape_code_antiguo_tambien_se_acepta() throws Exception {
+        // Compatibilidad: algunos emisores usan "code" en lugar de "error".
         try (MockTicketWsServer ws = new MockTicketWsServer().respond(
-                502, "{\"code\":\"DATA_INTEGRITY_ERROR\",\"message\":\"premio nulo\"}")) {
+                503, "{\"code\":\"DATABASE_UNAVAILABLE\",\"message\":\"sin pool\"}")) {
+            TicketDatabaseUnavailableException error = assertThrows(TicketDatabaseUnavailableException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-503-code"));
+
+            assertTrue(error.getMessage().contains("DATABASE_UNAVAILABLE"));
+        }
+    }
+
+    @Test
+    void error_503_sin_codigo_conocido_conserva_el_503_sin_afirmar_la_causa() throws Exception {
+        // Un 503 de un proxy no autoriza a decir DATABASE_UNAVAILABLE.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(
+                503, "{\"error\":\"UPSTREAM_BUSY\",\"message\":\"proxy\"}")) {
+            TicketWsUnavailableException error = assertThrows(TicketWsUnavailableException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-503-otro"));
+
+            assertTrue(error.getMessage().contains("503"));
+            assertTrue(error.getMessage().contains("UPSTREAM_BUSY"));
+        }
+    }
+
+    @Test
+    void error_503_sin_cuerpo_conserva_el_503_sin_codigo() throws Exception {
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(503, "")) {
+            TicketWsUnavailableException error = assertThrows(TicketWsUnavailableException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-503-vacio"));
+
+            assertTrue(error.getMessage().contains("503"));
+        }
+    }
+
+    @Test
+    void error_502_del_ws_se_preserva_como_data_integrity() throws Exception {
+        // MOCK: shape canonico del WS de Carlos ({"error":"..."}).
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(
+                502, "{\"error\":\"DATA_INTEGRITY_ERROR\",\"message\":\"premio nulo\"}")) {
             TicketDataIntegrityException error = assertThrows(TicketDataIntegrityException.class,
                     () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-502"));
 
             assertTrue(error.getMessage().contains("502"));
             assertTrue(error.getMessage().contains("DATA_INTEGRITY_ERROR"));
+        }
+    }
+
+    @Test
+    void error_502_sin_codigo_conocido_se_reporta_como_ws_error() throws Exception {
+        // 502 sin DATA_INTEGRITY_ERROR no es una inconsistencia confirmada.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(
+                502, "{\"error\":\"BAD_GATEWAY\",\"message\":\"proxy\"}")) {
+            TicketWsException error = assertThrows(TicketWsException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-502-otro"));
+
+            assertFalse(error instanceof TicketDataIntegrityException);
+            assertTrue(error.getMessage().contains("502"));
+            assertTrue(error.getMessage().contains("BAD_GATEWAY"));
+        }
+    }
+
+    @Test
+    void error_502_sin_cuerpo_se_reporta_como_ws_error() throws Exception {
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(502, "")) {
+            TicketWsException error = assertThrows(TicketWsException.class,
+                    () -> tool(props(ws.baseUrl(), "2s")).query(KEY, "req-502-vacio"));
+
+            assertFalse(error instanceof TicketDataIntegrityException);
+            assertTrue(error.getMessage().contains("502"));
         }
     }
 

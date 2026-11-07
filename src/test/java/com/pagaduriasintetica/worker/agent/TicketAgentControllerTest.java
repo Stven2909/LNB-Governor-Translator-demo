@@ -6,6 +6,7 @@ import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityExceptio
 import com.pagaduriasintetica.worker.agent.exception.TicketDatabaseUnavailableException;
 import com.pagaduriasintetica.worker.agent.exception.TicketTimeoutException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
+import com.pagaduriasintetica.worker.agent.exception.TicketWsUnavailableException;
 import com.pagaduriasintetica.worker.agent.tool.FixtureTicketQueryTool;
 import com.pagaduriasintetica.worker.agent.tool.TicketQueryTool;
 import com.pagaduriasintetica.worker.agent.tool.TicketToolResponse;
@@ -16,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -57,7 +60,26 @@ class TicketAgentControllerTest {
                 .andExpect(jsonPath("$.prize.currency").value("USD"))
                 .andExpect(jsonPath("$.prize.category").value("CASH"))
                 .andExpect(jsonPath("$.collectionStatus").value("PENDING"))
-                .andExpect(jsonPath("$.provenance").value("SYNTHETIC"));
+                .andExpect(jsonPath("$.provenance").value("SYNTHETIC"))
+                .andExpect(jsonPath("$.source").doesNotExist());
+    }
+
+    @Test
+    void source_seed_se_expone_en_la_respuesta() throws Exception {
+        TicketQueryTool seed = (key, traceId) -> new TicketToolResponse(
+                true, true, key.ticketNumber(),
+                new PrizeInfo("50.00", "USD", "CASH"),
+                "PENDING", "SYNTHETIC", "SEED", "Fixture autorizado", "Boleto encontrado y premiado");
+
+        mvc(seed).perform(post(URL)
+                        .header("X-Correlation-Id", "ctrl-source")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("SEED"))
+                .andExpect(content().string(containsString("\"source\":\"SEED\"")));
     }
 
     @Test
@@ -70,7 +92,10 @@ class TicketAgentControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("NOT_AWARDED"))
-                .andExpect(jsonPath("$.prize").doesNotExist());
+                .andExpect(jsonPath("$.prize").doesNotExist())
+                .andExpect(content().string(not(containsString("\"prize\""))))
+                .andExpect(content().string(not(containsString("\"collectionStatus\""))))
+                .andExpect(content().string(not(containsString("\"source\""))));
     }
 
     @Test
@@ -83,7 +108,10 @@ class TicketAgentControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("NOT_FOUND"))
-                .andExpect(jsonPath("$.prize").doesNotExist());
+                .andExpect(jsonPath("$.prize").doesNotExist())
+                .andExpect(content().string(not(containsString("\"prize\""))))
+                .andExpect(content().string(not(containsString("\"collectionStatus\""))))
+                .andExpect(content().string(not(containsString("\"source\""))));
     }
 
     @Test
@@ -142,6 +170,24 @@ class TicketAgentControllerTest {
                 .andExpect(jsonPath("$.traceId").value("corr-503"))
                 .andExpect(header().string("X-Correlation-Id", "corr-503"))
                 .andExpect(header().string("X-Request-Id", "corr-503"));
+    }
+
+    @Test
+    void ws_unavailable_sin_causa_declarada_devuelve_503_pero_no_afirma_database_unavailable() throws Exception {
+        TicketQueryTool noDisponible = (key, traceId) -> {
+            throw new TicketWsUnavailableException("WS de tickets no disponible (503 UPSTREAM_BUSY)");
+        };
+        mvc(noDisponible).perform(post(URL)
+                        .header("X-Correlation-Id", "corr-503-generico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}
+                                """))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("WS_ERROR"))
+                .andExpect(jsonPath("$.traceId").value("corr-503-generico"))
+                .andExpect(header().string("X-Correlation-Id", "corr-503-generico"))
+                .andExpect(header().string("X-Request-Id", "corr-503-generico"));
     }
 
     @Test

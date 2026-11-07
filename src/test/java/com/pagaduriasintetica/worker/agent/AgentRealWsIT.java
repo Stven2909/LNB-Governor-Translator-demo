@@ -60,6 +60,8 @@ class AgentRealWsIT {
         assertTrue(result.provenance() == TicketProvenance.SYNTHETIC
                         || result.provenance() == TicketProvenance.REAL,
                 "provenance coherente con el origen que declare el WS");
+        assertEquals(result.provenance() == TicketProvenance.REAL ? "SYBASE" : "SEED",
+                result.source(), "source coherente con provenance");
     }
 
     @Test
@@ -69,6 +71,8 @@ class AgentRealWsIT {
 
         assertEquals(TicketLookupStatus.NOT_AWARDED, result.result());
         assertNull(result.prize());
+        assertEquals(result.provenance() == TicketProvenance.REAL ? "SYBASE" : "SEED",
+                result.source(), "source coherente con provenance");
     }
 
     @Test
@@ -78,5 +82,7 @@ class AgentRealWsIT {
 
         assertEquals(TicketLookupStatus.NOT_FOUND, result.result());
         assertNull(result.prize());
+        assertEquals(result.provenance() == TicketProvenance.REAL ? "SYBASE" : "SEED",
+                result.source(), "source coherente con provenance");
     }
 }
