@@ -90,8 +90,7 @@ La traza de Carlos sigue siendo válida como **contrato de DTO**. No se usa como
 ### 3.5 Prompt y fixtures
 
 - `src/main/resources/prompts/ticket-agent-v0.1.txt`: el contrato de salida incluye `source` y no emite nulos.
-- `src/main/resources/fixtures/tickets/*.json`: alineados con `source:SEED` y sin `prize`/`collectionStatus` nulos.
-- `FixtureTicketQueryTool` **no** declara `source` a propósito: el modo FIXTURE debe seguir siendo distinguible del HTTP.
+- `src/main/resources/fixtures/tickets/*.json`: alineados con `source:SEED` y sin `prize`/`collectionStatus` nulos. Son ejemplos del contrato del WS; el stub `FixtureTicketQueryTool` los reemplaza en tiempo de ejecución y **no** declara `source` a propósito, para que el modo FIXTURE siga siendo distinguible del HTTP.
 
 ---
 
@@ -162,6 +161,8 @@ Fragmento de la traza cruda (`e2e-http-seed.txt`):
 {"traceId":"corr-e2e-0011111111","ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0011111111","series":null,"checkDigit":null},"result":"NOT_AWARDED","provenance":"SYNTHETIC","source":"SEED","message":"Boleto no premiado"}
 {"traceId":"corr-e2e-9999999999","ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"9999999999","series":null,"checkDigit":null},"result":"NOT_FOUND","provenance":"SYNTHETIC","source":"SEED","message":"Boleto no encontrado"}
 ```
+
+Nota: `series`/`checkDigit` aparecen nulos porque son campos opcionales de la clave de entrada que el agente ecoa; no son `prize` ni `collectionStatus`.
 
 Las 6 líneas `Procesando` están en `ws-http-procesando-extract.txt`; el log completo del WS, en `ws-http.log`.
 
