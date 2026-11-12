@@ -1,10 +1,11 @@
 # DEMO — Prueba vertical Pagaduría Digital (LNB)
 
-Demo presentable de la PoC: `mvn test` queda en **37/37** (24 E2E del pipeline + 4 ramas + 4
-transiciones de estado + 3 hash + 1 smoke + 1 harness E2E de 16 escenarios) y una corrida en
-vivo POSTea envelopes a `/push` devolviendo HTTP 200 con el estado esperado en cada caso.
+Demo presentable de la PoC:
 
-## Reproducir la evidencia (harness E2E)
+- **Suite de pruebas completa (2026-11-06, rama `feat/e3.2-integracion` @ `8f9b844`):** `mvn test` descubre **193 tests — 192 passed, 0 failures, 0 errors, 1 skipped** (`SybaseTicketRealTest`, requiere credenciales/VPN a Sybase real). Incluye todo el pipeline del Worker, la suite del agente de tickets y el WS de consulta.
+- **Antecedente histórico del pipeline base (2026-09-22):** `mvn test` reportaba **37/37** (y 75/75 al incorporar el harness E2E de 16 escenarios) y una corrida en vivo POSTea envelopes a `/push` devolviendo HTTP 200 con el estado esperado en cada caso. Ese número describe ese snapshot histórico, no la suite completa integrada actual.
+
+## Reproducir la evidencia (harness E2E histórico)
 
 ```powershell
 mvn test
@@ -72,4 +73,32 @@ Los archivos `envelopes/*.json` bajo `target/demo/` son los que se POSTean; los 
 
 - Sybase, Gobernador (Vertex) y Traductor son deterministas/mock; no hay JDBC ni Pub/Sub real.
 - El escenario "en vuelo" es simulado (PROCESSING pre-sembrado), no concurrencia real de hilos.
+
+---
+
+## Ejecución del Caso 1 (Consulta de Boletos: Agente y WS)
+
+Para verificar y probar de forma independiente los componentes de consulta de boletos (`[E1][CASO 1]`), se cuenta con los siguientes scripts y endpoints:
+
+### 1. WS de Consulta de Boletos (Carlos)
+- **Endpoint:** `POST /api/v1/tickets/lookup`
+- **Script de prueba directa:**
+  ```powershell
+  .\scripts\verify-carlos-ws.ps1
+  ```
+- **Modos:** Soporta modo semilla (`APP_SYBASE_TICKET_SEED_ENABLED=true` / `source: SEED`) para validación sin base de datos, y modo Sybase real (`APP_SYBASE_TICKET_ENABLED=true` / `source: SYBASE`) condicionado a conectividad y montaje de `jconn4`.
+
+### 2. Agente de Consulta con Vertex AI (Steven)
+- **Endpoint:** `POST /api/v1/agent/ticket-query`
+- **Script de prueba E2E integrada (Agente ↔ WS):**
+  ```powershell
+  .\scripts\verify-agent-e2e.ps1
+  ```
+  Exige coincidencia estricta de correlación, ausencia de campos nulos y propagación de `source`.
+- **Script de prueba negativa / fail-closed:**
+  ```powershell
+  .\scripts\verify-agent-failclosed.ps1
+  ```
+  Valida que con el WS apagado, el agente falle cerrado con HTTP 502 `WS_ERROR`, discriminando la llamada HTTP real frente a stubs en memoria.
+
 - La verificación del hash de contrato (escenario 16) es una función pura, sin HTTP.

@@ -6,8 +6,11 @@ push de Pub/Sub de un pago confirmado (`PAYMENT_COMMITTED`), lo valida, lo hace 
 un mock de **Sybase DES** con idempotencia atómica por `operationId`, cuarentena (DLQ) y
 recuperación in-doubt, y reporta a un endpoint (Opción B, mockeado).
 
-Estado de la entrega: **`mvn test` 75/75 en verde** (+ harness E2E de 16 escenarios, 16/16 PASS)
-y demo en vivo 7/7 HTTP 200.
+Estado de la entrega vigente (2026-11-06, rama `feat/e3.2-integracion` @ `8f9b844`):
+**193 tests descubiertos — 192 en verde, 0 failures, 0 errors, 1 omitido**
+(`SybaseTicketRealTest`, requiere Sybase real). El snapshot histórico del 22/09/2026 quedó en
+**75/75** (+ harness E2E de 16 escenarios, 16/16 PASS) y demo en vivo 7/7 HTTP 200: esas cifras
+describen esa entrega, no la actual, y no incluyen las suites del agente ni del WS de tickets.
 
 > **Nota sobre el alcance:** Este README documenta el estado de la **PoC local** con mocks deterministas. La integración real con DEV (Vertex AI, Pub/Sub real, JDBC/Sybase) se documenta en `roadmap-agentes-vertex.md` (FASE 0-6). Cada fase del plan congelado (`lnb-docs/PLAN_IMPLEMENTACION_V0.1.md`)
 queda reflejada en `README.md`.
@@ -44,6 +47,9 @@ worker-poc/
 │   ├── demo-live-run.ps1
 │   ├── demo-live-stop.ps1
 │   ├── ticket-query.ps1             # runner E3.2 agente de boleto
+│   ├── verify-carlos-ws.ps1         # verificación directa WS tickets
+│   ├── verify-agent-e2e.ps1         # verificación integrada Agente ↔ WS
+│   ├── verify-agent-failclosed.ps1  # prueba negativa fail-closed (WS caído -> 502)
 │   └── fixtures/
 │       └── tickets/                 # fixtures SINTÉTICOS para pruebas
 └── src/
@@ -305,7 +311,71 @@ inventada); hasher → PASS (hash del contrato). Cada escenario registra su expe
 mvn test
 ```
 Regenera `target/demo/` (gitignored). Snapshot congelado de la entrega en
-`docs/evidencia/2026-09-22/` (V0 sintética histórica en `docs/evidencia/2026-09-15/`).
+`docs/evidencia/2026-09-22/` (V0 sintética histórica en `docs/evidencia/2026-09-15/`). La
+evidencia de la corrección del agente de boleto está en `docs/evidencia/2026-11-06/`.
+
+### 6.1 Caso 1 — WS de tickets + agente de boleto
+
+Dos servicios, un solo artefacto: el código Java del WS es idéntico en `feat/e1-carlos-ticket-ws`
+(`04e33c4`) y en la rama de integración (`8f9b844`); `git diff` sobre `src/main/java/.../ticket`
+es vacío.
+
+| Servicio | Endpoint | Claves de respuesta |
+|---|---|---|
+| WS (Carlos) | `POST /api/v1/tickets/lookup` | `found`, `awarded`, `ticketNumber`, `prize?`, `collectionStatus?`, `provenance`, `source`, `databaseSource`, `message` |
+| Agente (E3.2) | `POST /api/v1/agent/ticket-query` | `traceId`, `ticket`, `result` (`FOUND\|NOT_AWARDED\|NOT_FOUND`), `prize?`, `collectionStatus?`, `provenance`, `source`, `message` |
+
+Request WS: `{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}`
+(también acepta el formato anidado `{"ticket":{...}}`).
+Request agente: `{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}`.
+
+```powershell
+mvn -DskipTests package
+
+# 1) WS en modo semilla (puerto 8085, sin Sybase)
+java -jar target\worker-poc-0.0.1-SNAPSHOT.jar --server.port=8085 `
+  --APP_SYBASE_TICKET_SEED_ENABLED=true `
+  --APP_SYBASE_TICKET_ENABLED=false `
+  --APP_SYBASE_TICKET_PROVENANCE=SYNTHETIC
+
+# 2) Agente apuntando al WS (puerto 8080)
+java -jar target\worker-poc-0.0.1-SNAPSHOT.jar --server.port=8080 `
+  --APP_TICKET_AGENT_MODE=HTTP `
+  --APP_TICKET_AGENT_BASE_URL=http://localhost:8085 `
+  --APP_TICKET_AGENT_MODEL_CLIENT=FAKE
+
+# 3) Verificación
+.\scripts\verify-carlos-ws.ps1 -BaseUrl http://localhost:8085
+.\scripts\verify-agent-e2e.ps1 -WsUrl http://localhost:8085 -AgentUrl http://localhost:8080
+.\scripts\verify-agent-failclosed.ps1 -AgentUrl http://localhost:8080
+```
+
+| Script | Qué prueba | Resultado esperado |
+|---|---|---|
+| `scripts/verify-carlos-ws.ps1` | contrato del WS (`/lookup` y `/status`) | casos canónicos OK |
+| `scripts/verify-agent-e2e.ps1` | agente → WS con asserts de `source` | `=== E2E OK ===`, exit 0 |
+| `scripts/verify-agent-failclosed.ps1` | WS caído | `502 WS_ERROR`, exit 0 |
+
+Modos y procedencia:
+
+| Modo | Configuración | `provenance` / `source` | ¿Cierra el Caso 1? |
+|---|---|---|---|
+| Semilla | `APP_SYBASE_TICKET_SEED_ENABLED=true`, `APP_SYBASE_TICKET_ENABLED=false` | `SYNTHETIC` / `SEED` | No. Solo valida cableado |
+| Sybase real | `APP_SYBASE_TICKET_ENABLED=true` + `jconn4` + IAM + credenciales read-only | `REAL` / `SYBASE` | Sí, si Equipo 2 recibe la misma clave |
+
+Reglas de contrato:
+
+- El WS usa la clave `error`; el agente usa `code`.
+- `NOT_FOUND` no es 404: el WS responde `200` con `found:false` y el agente `200` con
+  `result:NOT_FOUND`. Un `404` solo se traduce si el body trae `found:false`.
+- `X-Correlation-Id` / `X-Request-Id` se propagan extremo a extremo.
+- El agente falla cerrado: `provenance=REAL` sin `source=SYBASE` se rechaza.
+- `SybaseTicketRealTest` queda omitido mientras no haya `jconn4`, IAM y credenciales. La imagen
+  base no trae `jconn4` (TODO en el `Dockerfile`).
+
+Evidencia: `docs/evidencia/2026-11-06/` (`e2e-http-seed.txt`, `e2e-fixture-control.txt`,
+`failclosed-ws-down.txt`, `mvn-test-output.txt`) y
+`Evidencia_E32_Correccion_Agente_Boleto_2026-11-06.md`.
 
 ---
 
@@ -319,6 +389,20 @@ mvn -DskipTests package
 ```
 Resultado esperado: 7/7 HTTP 200 (`SUCCEEDED`, `IDEMPOTENT`, `REJECTED` ×2, `DLQ_QUARANTINED`
 ×3); también se guarda `target/demo/demo-live-run.json`. Más detalle en `DEMO.md`.
+
+---
+
+## 7.1 Ejecución independiente del Caso 1 (Consulta de Boletos)
+
+Para validar el flujo de consulta de boletos (`[E1][CASO 1]`), los componentes operan de forma desacoplada:
+
+1. **WS de Boletos (`POST /api/v1/tickets/lookup`):**
+   - Ejecución y verificación: `.\scripts\verify-carlos-ws.ps1`
+   - Modos: Semilla sintética (`APP_SYBASE_TICKET_SEED_ENABLED=true` / `source: SEED`) vs Sybase físico (`APP_SYBASE_TICKET_ENABLED=true` / `source: SYBASE`).
+
+2. **Agente de Boletos (`POST /api/v1/agent/ticket-query`):**
+   - Integración E2E: `.\scripts\verify-agent-e2e.ps1` (valida correlación, omisión de campos nulos y coincidencia de `source`).
+   - Prueba Fail-Closed: `.\scripts\verify-agent-failclosed.ps1` (con el WS detenido, exige 502 `WS_ERROR`, discriminando la llamada de red real frente al mock local).
 
 ---
 
@@ -355,11 +439,14 @@ intacto.
 | Componente | Estado en PoC | Estado en DEV | Responsable | Próxima fecha |
 |---|---|---|---|---|
 | Gobernador (Vertex AI) | `MockGovernor` | SDK + prompt real | **Carlos / Steven** | 9-10 oct (scaffold) |
-| Pub/Sub (push real) | POST HTTP simulado | Suscripción + DLQ real | **JD** | 14-15 oct (config) |
+| Pub/Sub (push real) | POST HTTP simulado | Suscripción + DLQ real | **Cloudfly / Kimi / Luis** | Por confirmar en el Caso 1 |
 | JDBC → Sybase | `FixtureJdbcExecutor` | Driver jConnect + VPN | **Alex** | Driver pendiente |
 | Reporte a API | `MockResultReporter` | HTTP real con 409 codes | **Steven + Alex** | Contrato en revisión |
 | Almacenamiento state | `InMemoryStateStore` | JDBC durable (idempotencia entre instancias) | **Steven** | 20 oct (integración) |
 | Outbox → Pub/Sub | No existe | Publicador transaccional | **Steven** (propuesta) | 11-15 oct |
+
+Esta tabla refleja el plan del 22/09/2026. El reparto y las fechas vigentes se registran en ClickUp
+(`[E1][CASO 1]` y hito `86bd24hhg`).
 
 ### Invariants del commit (regla de oro del plan)
 

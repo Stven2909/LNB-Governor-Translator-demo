@@ -123,9 +123,9 @@ APP_TICKET_AGENT_PROVENANCE=SYNTHETIC
 - **Antes de producción:** `locations/global` implica procesamiento fuera de `us-central1`; confirmar residencia de datos con Cloudfly/seguridad y evaluar un modelo disponible en la región. Además, usar cuenta de servicio con `roles/aiplatform.user` y alertas de presupuesto.
 
 ### WS de Carlos
-- **Pendiente:** Implementación
-- **Avanzamos con:** Fixtures SINTÉTICOS
-- **Fechas:** POR CONFIRMAR por Carlos
+- **Estado:** Código y contrato entregados en `feat/e1-carlos-ticket-ws` @ `04e33c4` (integrado en `feat/e3.2-integracion` @ `8f9b844`).
+- **Verificación integrada:** Probado en enlace HTTP local mediante `scripts/verify-agent-e2e.ps1` con 6 consultas efectivas en log y discriminación fail-closed (`scripts/verify-agent-failclosed.ps1` -> 502 `WS_ERROR`).
+- **Pendiente de despliegue:** Publicación e infraestructura en Cloud Run / API Gateway (Kimi/Luis) y lectura física real contra Sybase DEV (Alex/IT LNB con driver `jconn4` y credenciales).
 
 ---
 
