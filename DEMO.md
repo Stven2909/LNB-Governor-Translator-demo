@@ -3,7 +3,11 @@
 Demo presentable de la PoC:
 
 - **Suite de pruebas completa (2026-11-06, rama `feat/e3.2-integracion` @ `8f9b844`):** `mvn test` descubre **193 tests — 192 passed, 0 failures, 0 errors, 1 skipped** (`SybaseTicketRealTest`, requiere credenciales/VPN a Sybase real). Incluye todo el pipeline del Worker, la suite del agente de tickets y el WS de consulta.
-- **Antecedente histórico del pipeline base (2026-09-22):** `mvn test` reportaba **37/37** (y 75/75 al incorporar el harness E2E de 16 escenarios) y una corrida en vivo POSTea envelopes a `/push` devolviendo HTTP 200 con el estado esperado en cada caso. Ese número describe ese snapshot histórico, no la suite completa integrada actual.
+- **Antecedentes históricos (no acumulables):** el snapshot del 22/09/2026 reportaba **37/37**
+  (24 E2E del pipeline + 4 ramas + 4 transiciones + 3 hash + 1 smoke + 1 entrada del harness de
+  16 escenarios) y una corrida en vivo con 7/7 HTTP 200. El README del 24/10/2026 reportaba
+  **75/75**, ya con las suites del agente de boleto. Ninguna de esas cifras describe la suite
+  integrada actual de 193.
 
 ## Reproducir la evidencia (harness E2E histórico)
 
@@ -72,7 +76,10 @@ Los archivos `envelopes/*.json` bajo `target/demo/` son los que se POSTean; los 
 ## Limitaciones a declarar en la demo
 
 - Sybase, Gobernador (Vertex) y Traductor son deterministas/mock; no hay JDBC ni Pub/Sub real.
+  El WS de tickets y el agente de boleto sí existen como servicios; lo que falta es su publicación
+  en Cloud Run y la lectura física de Sybase.
 - El escenario "en vuelo" es simulado (PROCESSING pre-sembrado), no concurrencia real de hilos.
+- La verificación del hash de contrato (escenario 16) es una función pura, sin HTTP.
 
 ---
 
@@ -100,5 +107,3 @@ Para verificar y probar de forma independiente los componentes de consulta de bo
   .\scripts\verify-agent-failclosed.ps1
   ```
   Valida que con el WS apagado, el agente falle cerrado con HTTP 502 `WS_ERROR`, discriminando la llamada HTTP real frente a stubs en memoria.
-
-- La verificación del hash de contrato (escenario 16) es una función pura, sin HTTP.

@@ -392,20 +392,6 @@ Resultado esperado: 7/7 HTTP 200 (`SUCCEEDED`, `IDEMPOTENT`, `REJECTED` ×2, `DL
 
 ---
 
-## 7.1 Ejecución independiente del Caso 1 (Consulta de Boletos)
-
-Para validar el flujo de consulta de boletos (`[E1][CASO 1]`), los componentes operan de forma desacoplada:
-
-1. **WS de Boletos (`POST /api/v1/tickets/lookup`):**
-   - Ejecución y verificación: `.\scripts\verify-carlos-ws.ps1`
-   - Modos: Semilla sintética (`APP_SYBASE_TICKET_SEED_ENABLED=true` / `source: SEED`) vs Sybase físico (`APP_SYBASE_TICKET_ENABLED=true` / `source: SYBASE`).
-
-2. **Agente de Boletos (`POST /api/v1/agent/ticket-query`):**
-   - Integración E2E: `.\scripts\verify-agent-e2e.ps1` (valida correlación, omisión de campos nulos y coincidencia de `source`).
-   - Prueba Fail-Closed: `.\scripts\verify-agent-failclosed.ps1` (con el WS detenido, exige 502 `WS_ERROR`, discriminando la llamada de red real frente al mock local).
-
----
-
 ## 8. Requisitos y particularidades del entorno
 
 - **Java 21** y **Maven 3.9+** (o el wrapper `mvnw`). Spring Boot 4.1.1 → **Jackson 3**
@@ -465,11 +451,14 @@ Esta tabla refleja el plan del 22/09/2026. El reparto y las fechas vigentes se r
 |---|---|---|---|
 | **E3.0 — Estado base** | Steven | ✅ Completado (`15e2368`) | — |
 | **E3.1 — Gobernador real (Vertex)** | Carlos | ⏳ Pendiente SDK/prompt | 16/10 (review) |
-| **E3.2 — Pub/Sub real + 16 payloads** | Steven | ⏳ Pendiente suscripción JD | 19/10 (ensayo) |
+| **E3.2 — Pub/Sub real + 16 payloads** | Steven | ⏳ Pendiente suscripción (Cloudfly/Kimi/Luis) | Por confirmar en el Caso 1 |
 | **E3.3 — JDBC real → Sybase** | Alex + Steven | ⏳ Pendiente driver+VPN | 20/10 (integración) |
 | **E3.4 — Almacenamiento durable** | Steven | ⏳ Pendiente JDBC real | 20/10 |
 | **E3.5 — Reporte HTTP + 409 codes** | Steven + Alex | ⏳ Pendiente contrato | 16/10 |
 | **E3.6 — Coordinación/contratos** | Todo el equipo | ⏳ Pendiente JD/Alex | 20/10 |
+
+Esta tabla refleja el plan del 22/09/2026. Las fechas y responsables vigentes se registran en
+ClickUp (`[E1][CASO 1]` y hito `86bd24hhg`); el checklist de abajo corresponde a ese mismo plan.
 
 ### Checklist Go/No-Go 16 octubre
 
@@ -491,6 +480,8 @@ Esta tabla refleja el plan del 22/09/2026. El reparto y las fechas vigentes se r
 - `lnb-docs/REPORTE_EVIDENCIA_POC_LNB.md` — reporte con índices a toda la evidencia.
 - `src/main/resources/catalog/CATALOG_PAYMENT_COMMITTED_V0.1.json` — whitelist real del worker.
 - `docs/evidencia/2026-09-22/README.md` — cómo leer el snapshot congelado de la entrega.
+- `docs/evidencia/2026-11-06/Evidencia_E32_Correccion_Agente_Boleto_2026-11-06.md` — evidencia consolidada E3.2.
+- `ESTADO_E32_AGENTE_BOLETO.md` — estado del agente de boleto (actualizado 12/11/2026).
 - `DEMO.md` — runbook corto de la demo.
 
 ## 13. Requisitos de despliegue (Docker / Cloud Run)

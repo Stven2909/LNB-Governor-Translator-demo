@@ -1,5 +1,8 @@
 # Estado Actualizado — E3.2 Agente Consulta de Boleto
 
+> **Actualizado:** 12/11/2026. Este documento describe el agente; el estado integrado del WS y
+> del Caso 1 vive en `docs/evidencia/2026-11-06/` y en ClickUp (`[E1][CASO 1]`).
+
 ## 📌 Información Clave 24/10/2026
 
 ### Cambio de Prioridad (23/10/2026 - Jorge Daniel)
@@ -16,7 +19,7 @@
 
 **Endpoint:** `POST /api/v1/agent/ticket-query`
 
-**Contrato Propuesto (a confirmar con Carlos):**
+**Contrato entregado y verificado con el WS de Carlos (`04e33c4`):**
 
 **Entrada:**
 ```json
@@ -38,7 +41,7 @@
   "ticket": {...},
   "result": "FOUND|NOT_FOUND|NOT_AWARDED|ERROR",
   "prize": {"amount": "150.00", "currency": "USD", "category": "CASH"},
-  "collectionStatus": "APROBADO",
+  "collectionStatus": "PENDING",
   "provenance": "SYNTHETIC",
   "message": "Boleto encontrado y premiado correctamente"
 }
@@ -114,7 +117,8 @@ APP_TICKET_AGENT_PROVENANCE=SYNTHETIC
 - **Function calling verificado:** con `toolConfig.mode=ANY`, el modelo devuelve `consultar_boleto` con `lotteryCode`, `drawNumber` y `ticketNumber` correctos.
 - Evidencia: `docs/evidencia/2026-10-25/vertex-function-call.md`.
 - **End-to-end verificado el 25/10/2026:** `POST /api/v1/agent/ticket-query` devolvió `FOUND` con `prize.amount=150.00`, `provenance=SYNTHETIC` y `traceId=smoke-001`, usando Gemini real + WS fixture. También se verificaron `NOT_AWARDED`, `NOT_FOUND`, `400 INVALID_INPUT` y `504 WS_TIMEOUT`. Evidencia: `docs/evidencia/2026-10-25/e2e-smoke.md`.
-- **Pendiente único:** WS real de Carlos (modo `HTTP`).
+- **WS de Carlos:** entregado en `feat/e1-carlos-ticket-ws` @ `04e33c4` (ver §WS de Carlos). Lo
+  pendiente no es el código ni el contrato, sino su publicación y la lectura física de Sybase.
 
 ### Alcance y producción
 - Todas las pruebas apuntan a `proy-comercial-dev-lnb` (proyecto **dev**), no a un proyecto productivo.
@@ -129,11 +133,12 @@ APP_TICKET_AGENT_PROVENANCE=SYNTHETIC
 
 ---
 
-## 🚀 Próximos Pasos (Confirmado)
+## 🚀 Próximos Pasos
 
-1. ✅ **D1 (27/10):** Contrato + fixtures + tool + tests - **COMPLETADO**
-2. 📅 **D2 (29/10):** Suite de tests verde (~16 tests)
-3. 📅 **D3:** Llamada real al WS + modelo verificado (al publicar Carlos)
+1. ✅ **D1 (27/10):** Contrato + fixtures + tool + tests — COMPLETADO
+2. ✅ **D2:** Suite de integración — 193 descubiertos, 192 verdes, 1 omitido (06/11/2026)
+3. ⏳ **D3:** Publicación en Cloud Run y lectura real del WS — depende de infraestructura y Sybase
+4. ⏳ **Cierre:** solo en el hito `86bd24hhg` cuando Equipo 2 reciba la misma clave con `REAL/SYBASE`
 
 ---
 
