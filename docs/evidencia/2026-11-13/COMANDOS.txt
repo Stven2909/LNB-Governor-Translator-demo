@@ -1,0 +1,182 @@
+================================================================================
+ COMANDOS PREPARADOS - CASO 1 (E1) - SESION 13/11/2026
+ Repo: C:\Users\steve\Documents\Agentes y Vertex\worker-poc
+ Uso: abrir 3 ventanas PowerShell y ejecutar cada bloque EN LA VENTANA INDICADA
+================================================================================
+
+  VENTANA A -> WS       (puerto 8085, se queda corriendo)
+  VENTANA B -> AGENTE   (puerto 8080, se queda corriendo)
+  VENTANA C -> PRUEBAS  (aqui se escribe todo lo demas)
+
+  Regla: los comandos "java -jar" NO devuelven el prompt. Cada uno en su ventana.
+  Regla: todo lo que lleve body se hace con Invoke-RestMethod, NO con curl.exe.
+================================================================================
+
+
+================================================================================
+ BLOQUE 1 - PREPARACION (VENTANA C)
+================================================================================
+
+cd "C:\Users\steve\Documents\Agentes y Vertex\worker-poc"
+
+# Puertos libres: no debe devolver nada
+Get-NetTCPConnection -LocalPort 8080,8085 -State Listen -ErrorAction SilentlyContinue
+
+# Compilar (esperado: BUILD SUCCESS)
+mvn -DskipTests package
+
+# Verificar el jar (esperado: fecha de hoy)
+Get-Item target\worker-poc-0.0.1-SNAPSHOT.jar | Select-Object Name,Length,LastWriteTime
+
+# Carpeta de evidencia del dia
+New-Item -ItemType Directory -Force docs\evidencia\2026-11-13 | Out-Null
+
+
+================================================================================
+ BLOQUE 2 - LEVANTAR EL WS (VENTANA A)
+================================================================================
+
+cd "C:\Users\steve\Documents\Agentes y Vertex\worker-poc"
+
+java -jar target\worker-poc-0.0.1-SNAPSHOT.jar --server.port=8085 --APP_SYBASE_TICKET_SEED_ENABLED=true --APP_SYBASE_TICKET_ENABLED=false --APP_SYBASE_TICKET_PROVENANCE=SYNTHETIC
+
+# Esperado: "Tomcat started on port 8085" y "Started WorkerPocApplication"
+# El cursor queda bloqueado. NO escribir mas aqui.
+
+
+================================================================================
+ BLOQUE 3 - VERIFICAR EL WS (VENTANA C)
+================================================================================
+
+# Health (esperado: {"status":"UP"})
+curl.exe -s http://localhost:8085/actuator/health/readiness
+
+# Estado del pool (esperado: poolActive=false, seedEnabled=true)
+curl.exe -s http://localhost:8085/api/v1/tickets/status
+
+# Guardar el status como evidencia
+curl.exe -s http://localhost:8085/api/v1/tickets/status | Tee-Object docs\evidencia\2026-11-13\ws-status-2026-11-13.json
+
+# Consulta directa al WS (esperado: found=true, awarded=true, 50.00 USD CASH, PENDING, SEED)
+$wsBody = '{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:8085/api/v1/tickets/lookup -ContentType 'application/json' -Headers @{ 'X-Correlation-Id'='demo-ws-001' } -Body $wsBody | ConvertTo-Json -Depth 6
+
+# Suite del WS (esperado: 4/4 EXITO, EXIT CODE 0, correlacion corr-carlos-001)
+.\scripts\verify-carlos-ws.ps1 -BaseUrl http://localhost:8085 -RawOutputFile docs\evidencia\2026-11-13\ws-2026-11-13.txt
+
+
+================================================================================
+ BLOQUE 4 - LEVANTAR EL AGENTE (VENTANA B)
+================================================================================
+
+cd "C:\Users\steve\Documents\Agentes y Vertex\worker-poc"
+
+java -jar target\worker-poc-0.0.1-SNAPSHOT.jar --server.port=8080 --APP_TICKET_AGENT_MODE=HTTP --APP_TICKET_AGENT_BASE_URL=http://localhost:8085 --APP_TICKET_AGENT_MODEL_CLIENT=FAKE
+
+# Esperado: "Tomcat started on port 8080" y "Started WorkerPocApplication"
+# El cursor queda bloqueado. NO escribir mas aqui.
+
+
+================================================================================
+ BLOQUE 5 - RECORRIDO COMPLETO (VENTANA C)
+================================================================================
+
+# Health del agente (esperado: {"status":"UP"})
+curl.exe -s http://localhost:8080/actuator/health/readiness
+
+# Caso 1: boleto ganador (esperado: result=FOUND, traceId=demo-001, SEED)
+$body = '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}'
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/agent/ticket-query -ContentType 'application/json' -Headers @{ 'X-Correlation-Id'='demo-001' } -Body $body | ConvertTo-Json -Depth 6
+
+# Controles: 0011111111 -> NOT_AWARDED / 9999999999 -> NOT_FOUND
+foreach ($t in '0011111111','9999999999') {
+  $payload = @{ ticket = @{ lotteryCode='LNB'; drawNumber='2026-10-15'; ticketNumber=$t } } | ConvertTo-Json -Compress
+  Write-Host "--- $t"
+  Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/agent/ticket-query -ContentType 'application/json' -Headers @{ 'X-Correlation-Id'="demo-$t" } -Body $payload | ConvertTo-Json -Depth 6
+}
+
+# E2E con traza guardada (esperado: === E2E OK ===)
+.\scripts\verify-agent-e2e.ps1 -WsUrl http://localhost:8085 -AgentUrl http://localhost:8080 -OutFile docs\evidencia\2026-11-13\e2e-2026-11-13.txt
+
+# Nota: el WARN "sin -WsLogPath" es normal. Se compensa en el Bloque 6.
+
+
+================================================================================
+ BLOQUE 6 - PRUEBA NEGATIVA FAIL-CLOSED (VENTANA C)
+================================================================================
+
+# PASO 1: ir a la VENTANA A y presionar Ctrl+C para detener el WS.
+# PASO 2: ejecutar en la VENTANA C:
+
+.\scripts\verify-agent-failclosed.ps1 -AgentUrl http://localhost:8080 -OutFile docs\evidencia\2026-11-13\failclosed-2026-11-13.txt
+
+# Esperado:
+# --- AGENTE 502
+# {"traceId":"corr-neg-...","code":"WS_ERROR","message":"Fallo de red al consultar WS de tickets"}
+# === FAIL-CLOSED OK ===
+
+
+================================================================================
+ BLOQUE 7 - RECORRIDO INVERSO: SISTEMA -> SYBASE (VENTANA C)
+================================================================================
+
+# PASO 1: ir a la VENTANA B y presionar Ctrl+C para detener el agente (libera el 8080).
+# PASO 2: ejecutar en la VENTANA C:
+
+.\scripts\demo-live-start.ps1
+# Esperado: "PID=... guardado" y "App UP (health=200)"
+
+.\scripts\demo-live-run.ps1
+# Esperado: 7 envelopes, 7/7 HTTP 200
+
+.\scripts\demo-live-stop.ps1
+# Esperado: proceso detenido por el listener de 8080
+
+
+================================================================================
+ BLOQUE 8 - CERRAR LA EVIDENCIA (VENTANA C)
+================================================================================
+
+cd "C:\Users\steve\Documents\Agentes y Vertex\worker-poc"
+
+Get-ChildItem docs\evidencia\2026-11-13
+
+git add docs/evidencia/2026-11-13
+git commit -m "docs(evidencia): corrida integral Caso 1 2026-11-13 (semilla + fail-closed)"
+git push origin feat/e3.2-integracion
+
+
+================================================================================
+ CHULETA: QUE ESPERAR
+================================================================================
+
+mvn package                     -> BUILD SUCCESS
+java ... 8085                   -> Tomcat started on port 8085
+/actuator/health/readiness      -> {"status":"UP"}
+/api/v1/tickets/status          -> poolActive=false, seedEnabled=true
+lookup WS 0012345678            -> found=true, awarded=true, 50.00 USD CASH, PENDING
+verify-carlos-ws.ps1            -> 4/4 EXITO, EXIT CODE 0
+java ... 8080                   -> Tomcat started on port 8080
+agente 0012345678               -> result=FOUND
+agente 0011111111               -> result=NOT_AWARDED
+agente 9999999999               -> result=NOT_FOUND
+verify-agent-e2e.ps1            -> === E2E OK ===
+verify-agent-failclosed.ps1     -> 502 WS_ERROR, === FAIL-CLOSED OK ===
+demo-live-run.ps1               -> 7/7 HTTP 200
+
+
+================================================================================
+ CHULETA: SI FALLA
+================================================================================
+
+Puerto ocupado            -> Get-NetTCPConnection -LocalPort 8080,8085 -State Listen
+400 Bad Request           -> se uso curl.exe con body; usar Invoke-RestMethod
+502 o 504 en el agente    -> el WS no esta arriba (Ventana A)
+200 en fail-closed        -> el WS sigue vivo, o el agente esta en modo FIXTURE
+demo-live no arranca      -> el agente sigue ocupando el 8080 (Ctrl+C en Ventana B)
+"python"/"mvn" no existe  -> usar .\mvnw -DskipTests package
+
+
+================================================================================
+ FIN
+================================================================================
