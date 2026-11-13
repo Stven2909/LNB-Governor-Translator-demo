@@ -92,8 +92,12 @@ curl.exe -s http://localhost:8085/api/v1/tickets/status
 
 ```powershell
 $wsBody = '{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}'
-curl.exe -s -X POST http://localhost:8085/api/v1/tickets/lookup -H "Content-Type: application/json" -H "X-Correlation-Id: demo-ws-001" --data-raw $wsBody
+Invoke-RestMethod -Method Post -Uri http://localhost:8085/api/v1/tickets/lookup -ContentType 'application/json' -Headers @{ 'X-Correlation-Id'='demo-ws-001' } -Body $wsBody | ConvertTo-Json -Depth 6
 ```
+
+> **No usar `curl.exe` con body en PowerShell 5.1:** convierte las comillas internas y el
+> servidor recibe JSON inválido (`400 Bad Request`). No es un fallo del WS. Usar
+> `Invoke-RestMethod` o pasar el body por archivo con `--data-binary "@body.json"`.
 
 **Esperado:** `found:true`, `awarded:true`, `prize 50.00 USD CASH`, `collectionStatus:PENDING`,
 `provenance:SYNTHETIC`, `source:SEED`.
@@ -147,7 +151,7 @@ curl.exe -s http://localhost:8080/actuator/health/readiness
 **Caso 1 — boleto ganador:**
 ```powershell
 $body = '{"ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678"}}'
-curl.exe -s -X POST http://localhost:8080/api/v1/agent/ticket-query -H "Content-Type: application/json" -H "X-Correlation-Id: demo-001" --data-raw $body
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/agent/ticket-query -ContentType 'application/json' -Headers @{ 'X-Correlation-Id'='demo-001' } -Body $body | ConvertTo-Json -Depth 6
 ```
 
 **Esperado:** `result:"FOUND"`, `traceId:"demo-001"`, `prize 50.00`, `provenance:SYNTHETIC`,
