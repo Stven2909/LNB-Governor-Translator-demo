@@ -1,0 +1,6 @@
+﻿=== EVIDENCIA CORRIDA WS CARLOS ===
+Fecha: 2026-11-12T22:11:48Z
+StatusCode: 200
+X-Correlation-Id: corr-carlos-001
+X-Request-Id: corr-carlos-001
+RawContent: {"found":true,"awarded":true,"ticketNumber":"0012345678","prize":{"amount":"50.00","currency":"USD","category":"CASH"},"collectionStatus":"PENDING","provenance":"SYNTHETIC","source":"SEED","databaseSource":"Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexiÃ³n VPN]","message":"Boleto encontrado y premiado"}

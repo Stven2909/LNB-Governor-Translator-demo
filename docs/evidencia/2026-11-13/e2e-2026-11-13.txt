@@ -1,0 +1,58 @@
+﻿
+=== E2E agente E3.2 -> WS de boletos ===
+fecha=2026-11-12T22:17:15.8720988-06:00
+ws=http://localhost:8085 agente=http://localhost:8080
+host=LAPTOP-012OB43L powershell=5.1.26100.9818
+--- WS /status 200
+header X-Correlation-Id: 5ace1373-6720-42c4-9ff3-13ba65a164a4
+header X-Request-Id: 5ace1373-6720-42c4-9ff3-13ba65a164a4
+header Transfer-Encoding: chunked
+header Keep-Alive: timeout=60
+header Connection: keep-alive
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:15 GMT
+{"poolActive":false,"databaseSource":"Ninguna (Pool no conectado)","seedEnabled":true,"lastError":"Sybase JDBC deshabilitado por configuraciÃ³n (app.sybase.ticket.enabled=false)","lastQueryError":null,"lastCheck":"2026-11-13T04:15:56.242019100Z"}
+--- WS 0012345678 200
+header X-Correlation-Id: corr-e2e-0012345678
+header X-Request-Id: corr-e2e-0012345678
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"found":true,"awarded":true,"ticketNumber":"0012345678","prize":{"amount":"50.00","currency":"USD","category":"CASH"},"collectionStatus":"PENDING","provenance":"SYNTHETIC","source":"SEED","databaseSource":"Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexiÃ³n VPN]","message":"Boleto encontrado y premiado"}
+--- AGENTE 0012345678 200
+header X-Correlation-Id: corr-e2e-0012345678
+header X-Request-Id: corr-e2e-0012345678
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"traceId":"corr-e2e-0012345678","ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0012345678","series":null,"checkDigit":null},"result":"FOUND","prize":{"amount":"50.00","currency":"USD","category":"CASH"},"collectionStatus":"PENDING","provenance":"SYNTHETIC","source":"SEED","message":"Boleto encontrado y premiado"}
+--- WS 0011111111 200
+header X-Correlation-Id: corr-e2e-0011111111
+header X-Request-Id: corr-e2e-0011111111
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"found":true,"awarded":false,"ticketNumber":"0011111111","provenance":"SYNTHETIC","source":"SEED","databaseSource":"Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexiÃ³n VPN]","message":"Boleto sin premio asignado"}
+--- AGENTE 0011111111 200
+header X-Correlation-Id: corr-e2e-0011111111
+header X-Request-Id: corr-e2e-0011111111
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"traceId":"corr-e2e-0011111111","ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"0011111111","series":null,"checkDigit":null},"result":"NOT_AWARDED","provenance":"SYNTHETIC","source":"SEED","message":"Boleto no premiado"}
+--- WS 9999999999 200
+header X-Correlation-Id: corr-e2e-9999999999
+header X-Request-Id: corr-e2e-9999999999
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"found":false,"awarded":false,"ticketNumber":"9999999999","provenance":"SYNTHETIC","source":"SEED","databaseSource":"Fixture autorizado LNB DEV (Caso 1 de Alex/Danny) [Sybase pool: sin conexiÃ³n VPN]","message":"Boleto no encontrado"}
+--- AGENTE 9999999999 200
+header X-Correlation-Id: corr-e2e-9999999999
+header X-Request-Id: corr-e2e-9999999999
+header Transfer-Encoding: chunked
+header Content-Type: application/json
+header Date: Fri, 13 Nov 2026 04:17:16 GMT
+{"traceId":"corr-e2e-9999999999","ticket":{"lotteryCode":"LNB","drawNumber":"2026-10-15","ticketNumber":"9999999999","series":null,"checkDigit":null},"result":"NOT_FOUND","provenance":"SYNTHETIC","source":"SEED","message":"Boleto no encontrado"}
+WARN sin -WsLogPath no se puede probar que el agente llamo al WS; use la prueba negativa o pase el log
+=== E2E OK ===
