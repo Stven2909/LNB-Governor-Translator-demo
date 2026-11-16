@@ -5,11 +5,22 @@ import com.pagaduriasintetica.worker.contract.ticket.TicketQueryResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Endpoint del agente de boleto (E3.2).
+ *
+ * <p>Se excluye del perfil {@code carlos} porque ese perfil representa el rol del WS: el
+ * servicio que expone el contrato de boletos no debe exponer tambien la ruta del agente. Sin
+ * esta exclusion, un error de URL en la demostracion devuelve un {@code FOUND} de fixture por
+ * {@code /api/v1/agent/ticket-query} en el servicio del WS, que es exactamente el dato falso que
+ * se quiere evitar. Con la exclusion, esa ruta responde 404 en el servicio equivocado.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/agent")
+@Profile("!carlos")
 public class TicketAgentController {
 
     private final TicketAgent ticketAgent;

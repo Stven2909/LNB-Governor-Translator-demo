@@ -44,6 +44,8 @@ class SybaseTicketRealTest {
         SybaseTicketProperties props = new SybaseTicketProperties();
         props.setEnabled(true);
         props.setSeedEnabled(false); // Modo estricto real: sin semilla
+        // Sin default en el codigo: la tabla real la confirma IT LNB y se pasa por entorno.
+        props.setTableName(System.getenv().getOrDefault("APP_SYBASE_TICKET_TABLE", ""));
         props.setDefaultProvenance("REAL");
         props.setUrl(sybaseJdbcUrl);
         props.setUsername(sybaseUsername);

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -14,8 +15,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Endpoint del WS de boletos (rol E1).
+ *
+ * <p>Se activa solo con el perfil {@code carlos}, que es el que representa el rol WS. Es la
+ * simetria de {@code TicketAgentController}, que se excluye de ese mismo perfil: cada servicio
+ * expone unicamente su propio contrato. Con esto, el servicio del agente responde 404 en
+ * {@code /api/v1/tickets/*} y el servicio del WS responde 404 en {@code /api/v1/agent/*}, de modo
+ * que un error de URL no puede devolver el dato de negocio del rol equivocado.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/tickets")
+@Profile("carlos")
 public class TicketLookupController {
 
     private static final Logger log = LoggerFactory.getLogger(TicketLookupController.class);

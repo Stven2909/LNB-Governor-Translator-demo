@@ -18,7 +18,9 @@ public class SybaseTicketProperties {
     private int poolSize = 5;
     private Duration connectionTimeout = Duration.ofSeconds(3);
     private Duration initializationFailTimeout = Duration.ofSeconds(10);
-    private String tableName = "LOTTERY_TICKETS";
+    // Sin default: la tabla/vista real de Sybase la confirma IT LNB. Con enabled=true se exige
+    // APP_SYBASE_TICKET_TABLE y el validador de arranque falla si viene vacia.
+    private String tableName = "";
     private String defaultProvenance = "SYNTHETIC";
 
     public boolean isEnabled() { return enabled; }
