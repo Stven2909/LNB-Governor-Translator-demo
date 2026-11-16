@@ -3,6 +3,7 @@ package com.pagaduriasintetica.worker.agent.tool;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pagaduriasintetica.worker.agent.auth.IdTokenProvider;
 import com.pagaduriasintetica.worker.agent.exception.InvalidWsResponseException;
 import com.pagaduriasintetica.worker.agent.exception.TicketAgentException;
 import com.pagaduriasintetica.worker.agent.exception.TicketDataIntegrityException;
@@ -12,6 +13,7 @@ import com.pagaduriasintetica.worker.agent.exception.TicketWsException;
 import com.pagaduriasintetica.worker.agent.exception.TicketWsUnavailableException;
 import com.pagaduriasintetica.worker.contract.ticket.TicketKey;
 import com.pagaduriasintetica.worker.contract.ticket.TicketProvenance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.http.MediaType;
@@ -41,8 +43,10 @@ public class HttpTicketQueryTool implements TicketQueryTool {
     private final String lookupUrl;
     private final String defaultProvenance;
     private final String defaultSource;
+    private final IdTokenProvider idTokens;
 
-    public HttpTicketQueryTool(TicketAgentProperties props) {
+    @Autowired
+    public HttpTicketQueryTool(TicketAgentProperties props, IdTokenProvider idTokens) {
         if (!StringUtils.hasText(props.getBaseUrl())) {
             throw new IllegalStateException("app.ticket-agent.base-url requerido cuando mode=HTTP");
         }
@@ -51,11 +55,20 @@ public class HttpTicketQueryTool implements TicketQueryTool {
         this.lookupUrl = props.getBaseUrl() + props.getLookupPath();
         this.defaultProvenance = parseProvenance(props.getProvenance()).name();
         this.defaultSource = parseSource(props.getSource());
+        this.idTokens = idTokens;
         Duration timeout = parseTimeout(props.getTimeout());
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(timeout);
         requestFactory.setReadTimeout(timeout);
         this.restClient = RestClient.builder().requestFactory(requestFactory).build();
+    }
+
+    /**
+     * Constructor de conveniencia para pruebas y para cualquier uso fuera de Spring. El
+     * comportamiento de auth es el mismo que en el contexto: lo decide la configuracion.
+     */
+    public HttpTicketQueryTool(TicketAgentProperties props) {
+        this(props, new IdTokenProvider(props));
     }
 
     /**
@@ -104,11 +117,20 @@ public class HttpTicketQueryTool implements TicketQueryTool {
             if (key.series() != null) body.put("series", key.series());
             if (key.checkDigit() != null) body.put("checkDigit", key.checkDigit());
 
-            var response = restClient.post()
+            var request = restClient.post()
                     .uri(lookupUrl)
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("X-Request-Id", requestId)
-                    .header("X-Correlation-Id", requestId)
+                    .header("X-Correlation-Id", requestId);
+
+            // Con el WS privado, sin este header Cloud Run responde 403 antes de llegar al
+            // contrato: el agente veria "sin permiso" donde deberia ver el dato del boleto.
+            String idToken = idTokens.token();
+            if (StringUtils.hasText(idToken)) {
+                request.header("Authorization", "Bearer " + idToken);
+            }
+
+            var response = request
                     .body(serialize(body))
                     .retrieve()
                     .toEntity(TicketToolResponse.class)
@@ -130,6 +152,13 @@ public class HttpTicketQueryTool implements TicketQueryTool {
                 }
                 throw new TicketWsException(
                         "404 del WS sin payload de negocio (found=false): no se traduce a NOT_FOUND", e);
+            }
+            if (status == 401 || status == 403) {
+                // Cloud Run rechaza la credencial antes de ejecutar el WS. Se reporta como error
+                // de integracion, nunca como "boleto no encontrado".
+                throw new TicketWsException(
+                        "WS de tickets rechazo la credencial (" + status + "): revisar "
+                                + "app.ticket-agent.auth-enabled y la audiencia del ID token", e);
             }
             // El estado del WS es informacion de negocio, no un detalle de transporte: 503
             // significa "no pude consultar" y 502 "el dato es inconsistente". Pero el codigo

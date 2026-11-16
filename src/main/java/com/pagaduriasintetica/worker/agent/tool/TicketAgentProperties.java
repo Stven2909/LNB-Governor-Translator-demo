@@ -19,6 +19,26 @@ public class TicketAgentProperties {
     private String source = "";
     private String promptVersion = "ticket-agent-v0.1";
 
+    /**
+     * Si es true, cada consulta viaja con {@code Authorization: Bearer <ID token>}. Se usa
+     * cuando el WS esta en Cloud Run privado: sin token el servicio responde 403 antes de
+     * ejecutar codigo. Desactivado por defecto para que el entorno local no dependa de GCP.
+     */
+    private boolean authEnabled = false;
+
+    /**
+     * Audiencia del ID token. Vacio significa "usar {@code base-url}". Cloud Run exige que la
+     * audiencia sea exactamente la URL del servicio ({@code https://servicio-xxxx.a.run.app}),
+     * no un dominio propio: si no coincide, responde 401.
+     */
+    private String authAudience = "";
+
+    /**
+     * Token estatico para pruebas manuales contra un WS privado desde fuera de GCP. Vacio
+     * significa "pedirlo al metadata server". No se usa cuando {@code auth-enabled=false}.
+     */
+    private String authToken = "";
+
     public String getMode() { return mode; }
     public void setMode(String mode) { this.mode = mode; }
 
@@ -48,4 +68,13 @@ public class TicketAgentProperties {
 
     public String getPromptVersion() { return promptVersion; }
     public void setPromptVersion(String promptVersion) { this.promptVersion = promptVersion; }
+
+    public boolean isAuthEnabled() { return authEnabled; }
+    public void setAuthEnabled(boolean authEnabled) { this.authEnabled = authEnabled; }
+
+    public String getAuthAudience() { return authAudience; }
+    public void setAuthAudience(String authAudience) { this.authAudience = authAudience; }
+
+    public String getAuthToken() { return authToken; }
+    public void setAuthToken(String authToken) { this.authToken = authToken; }
 }

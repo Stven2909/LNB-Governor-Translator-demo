@@ -364,6 +364,31 @@ class HttpTicketQueryToolTest {
     }
 
     @Test
+    void auth_deshabilitada_no_envia_authorization() throws Exception {
+        // MOCK: WS local sin IAM. Sin auth no debe viajar una cabecera que el WS no espera.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_BODY)) {
+            tool(props(ws.baseUrl(), "2s")).query(KEY, "req-sin-auth");
+
+            assertNull(ws.lastAuthorization());
+        }
+    }
+
+    @Test
+    void auth_con_token_estatico_envia_bearer() throws Exception {
+        // MOCK: simula el WS privado; el token estatico evita depender del metadata server.
+        try (MockTicketWsServer ws = new MockTicketWsServer().respond(200, FOUND_BODY)) {
+            TicketAgentProperties props = props(ws.baseUrl(), "2s");
+            props.setAuthEnabled(true);
+            props.setAuthToken("token-de-prueba");
+
+            TicketToolResponse response = tool(props).query(KEY, "req-con-auth");
+
+            assertTrue(response.found());
+            assertEquals("Bearer token-de-prueba", ws.lastAuthorization());
+        }
+    }
+
+    @Test
     void timeout_invalido_falla_al_construir() {
         assertThrows(IllegalStateException.class,
                 () -> tool(props("http://127.0.0.1:9090", "no-es-duracion")));

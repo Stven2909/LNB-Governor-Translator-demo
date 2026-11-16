@@ -26,6 +26,7 @@ final class MockTicketWsServer implements AutoCloseable {
     private volatile String lastRequestBody;
     private volatile String lastRequestId;
     private volatile String lastCorrelationId;
+    private volatile String lastAuthorization;
 
     MockTicketWsServer() throws IOException {
         // MOCK: puerto efimero para no chocar con servicios locales.
@@ -36,6 +37,7 @@ final class MockTicketWsServer implements AutoCloseable {
             try {
                 lastRequestId = exchange.getRequestHeaders().getFirst("X-Request-Id");
                 lastCorrelationId = exchange.getRequestHeaders().getFirst("X-Correlation-Id");
+                lastAuthorization = exchange.getRequestHeaders().getFirst("Authorization");
                 lastRequestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 
                 if (!delay.isZero()) {
@@ -85,6 +87,10 @@ final class MockTicketWsServer implements AutoCloseable {
 
     String lastCorrelationId() {
         return lastCorrelationId;
+    }
+
+    String lastAuthorization() {
+        return lastAuthorization;
     }
 
     @Override
