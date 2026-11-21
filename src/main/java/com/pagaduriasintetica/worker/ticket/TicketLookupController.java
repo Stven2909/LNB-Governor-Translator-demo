@@ -57,10 +57,43 @@ public class TicketLookupController {
                 correlationId, key.lotteryCode(), key.drawNumber(), key.ticketNumber());
 
         try {
-            TicketLookupResponse response = service.lookup(key);
+            TicketLookupResponse response = service.lookup(key, correlationId);
+            if (response == null) {
+                response = service.lookup(key);
+            }
+            if (response == null) {
+                log.error("[correlationId={}] Respuesta nula del servicio para boleto {}", correlationId, key.ticketNumber());
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                        "error", "DATA_INTEGRITY_ERROR",
+                        "message", "Respuesta nula del servicio de consulta de boletos",
+                        "correlationId", correlationId
+                ));
+            }
             log.info("[correlationId={}] Resultado para boleto {}: found={}, awarded={}, provenance={}, source={}",
                     correlationId, key.ticketNumber(), response.found(), response.awarded(), response.provenance(), response.source());
             return ResponseEntity.ok(response);
+        } catch (AppsScriptTimeoutException e) {
+            log.error("[correlationId={}] Timeout consultando Apps Script (HTTP 504 WS_TIMEOUT): {}", correlationId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(Map.of(
+                    "code", "WS_TIMEOUT",
+                    "message", "Timeout al consultar Apps Script",
+                    "correlationId", correlationId
+            ));
+        } catch (AppsScriptDataIntegrityException e) {
+            log.error("[correlationId={}] Inconsistencia de datos en Apps Script (HTTP 502 DATA_INTEGRITY_ERROR): {}", correlationId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                    "error", "DATA_INTEGRITY_ERROR",
+                    "message", "Inconsistencia de datos en Apps Script: " + e.getMessage(),
+                    "correlationId", correlationId
+            ));
+        } catch (AppsScriptException e) {
+            log.error("[correlationId={}] Fallo upstream Apps Script (HTTP 502 WS_ERROR): {}", correlationId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                    "code", "WS_ERROR",
+                    "error", "UPSTREAM_ERROR",
+                    "message", "Fallo al consultar Apps Script: " + e.getMessage(),
+                    "correlationId", correlationId
+            ));
         } catch (SybaseDatabaseUnavailableException e) {
             log.error("[correlationId={}] Fallo seguro (Fail Closed - Pool Sybase no disponible): {}", correlationId, e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(

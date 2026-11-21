@@ -43,6 +43,8 @@ substitutions:
   _TICKET_AGENT_PROVENANCE: SYNTHETIC
   _LOG_LEVEL_ROOT: INFO
   _LOG_LEVEL_WORKER: INFO
+  _TICKET_SOURCE: APPS_SCRIPT
+  _SYNTHETIC_TICKET_URL: 'https://script.google.com/macros/s/AKfycbydXVwCmBLwJGREcjGnJ_iYEDEGmUYJGNKth4dlFQS0-T8IPZm9orID10PoW1afaB8ctA/exec'
 
 # La SA de build publica en Artifact Registry y despliega segun AMBIENTE_DEV_LNB.md.
 # Formato completo requerido por Cloud Build. Requiere que el disparador pueda actuar como
@@ -129,7 +131,7 @@ steps:
       - '--startup-probe=httpGet.path=/actuator/health/readiness,initialDelaySeconds=5,timeoutSeconds=3,periodSeconds=5,failureThreshold=12'
       # Una sola linea: gcloud separa por comas y el plegado de YAML insertaria espacios que
       # romperian el nombre de la variable siguiente.
-      - '--set-env-vars=APP_GOVERNOR_MODE=${_GOVERNOR_MODE},APP_INGEST_MODE=${_INGEST_MODE},APP_STORE_MODE=${_STORE_MODE},APP_REPORTER_MODE=${_REPORTER_MODE},APP_VERTEX_PROJECT_ID=${PROJECT_ID},APP_TICKET_AGENT_MODE=${_TICKET_AGENT_MODE},APP_TICKET_AGENT_MODEL_CLIENT=${_TICKET_AGENT_MODEL_CLIENT},APP_TICKET_AGENT_PROVENANCE=${_TICKET_AGENT_PROVENANCE},LOG_LEVEL_ROOT=${_LOG_LEVEL_ROOT},LOG_LEVEL_WORKER=${_LOG_LEVEL_WORKER}'
+      - '--set-env-vars=APP_GOVERNOR_MODE=${_GOVERNOR_MODE},APP_INGEST_MODE=${_INGEST_MODE},APP_STORE_MODE=${_STORE_MODE},APP_REPORTER_MODE=${_REPORTER_MODE},APP_VERTEX_PROJECT_ID=${PROJECT_ID},APP_TICKET_AGENT_MODE=${_TICKET_AGENT_MODE},APP_TICKET_AGENT_MODEL_CLIENT=${_TICKET_AGENT_MODEL_CLIENT},APP_TICKET_AGENT_PROVENANCE=${_TICKET_AGENT_PROVENANCE},LOG_LEVEL_ROOT=${_LOG_LEVEL_ROOT},LOG_LEVEL_WORKER=${_LOG_LEVEL_WORKER},APP_TICKET_SOURCE=${_TICKET_SOURCE},APP_TICKET_APPS_SCRIPT_URL=${_SYNTHETIC_TICKET_URL}'
       - '--quiet'
     # TODO(secretos): cuando el responsable confirme los nombres reales en Secret Manager,
     # agregar al deploy UNA linea --set-secrets por secreto, referenciando el nombre real

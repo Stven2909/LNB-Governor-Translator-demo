@@ -205,4 +205,86 @@ class TicketLookupControllerTest {
                 .andExpect(jsonPath("$.lastError").exists())
                 .andExpect(jsonPath("$.lastCheck").exists());
     }
+
+    @Test
+    @DisplayName("Apps Script Timeout: devuelve 504 GATEWAY_TIMEOUT con code WS_TIMEOUT")
+    void appsScriptTimeout_devuelve504() throws Exception {
+        TicketLookupService mockService = Mockito.mock(TicketLookupService.class);
+        when(mockService.lookup(any(), any()))
+                .thenThrow(new AppsScriptTimeoutException("Timeout al consultar Apps Script"));
+
+        TicketLookupController controller = new TicketLookupController(mockService);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        Map<String, Object> body = Map.of(
+                "lotteryCode", "LOTRA",
+                "drawNumber", "QA26-1102",
+                "ticketNumber", "9911022000001"
+        );
+
+        mockMvc.perform(post("/api/v1/tickets/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "corr-504-test")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(header().string("X-Correlation-Id", "corr-504-test"))
+                .andExpect(header().string("X-Request-Id", "corr-504-test"))
+                .andExpect(jsonPath("$.code").value("WS_TIMEOUT"))
+                .andExpect(jsonPath("$.message").value("Timeout al consultar Apps Script"))
+                .andExpect(jsonPath("$.correlationId").value("corr-504-test"));
+    }
+
+    @Test
+    @DisplayName("Apps Script Error Upstream: devuelve 502 BAD_GATEWAY con code WS_ERROR")
+    void appsScriptError_devuelve502() throws Exception {
+        TicketLookupService mockService = Mockito.mock(TicketLookupService.class);
+        when(mockService.lookup(any(), any()))
+                .thenThrow(new AppsScriptException("Fallo al consultar Apps Script: HTTP 500"));
+
+        TicketLookupController controller = new TicketLookupController(mockService);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        Map<String, Object> body = Map.of(
+                "lotteryCode", "LOTRA",
+                "drawNumber", "QA26-1102",
+                "ticketNumber", "9911022000001"
+        );
+
+        mockMvc.perform(post("/api/v1/tickets/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "corr-502-test")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadGateway())
+                .andExpect(header().string("X-Correlation-Id", "corr-502-test"))
+                .andExpect(jsonPath("$.code").value("WS_ERROR"))
+                .andExpect(jsonPath("$.error").value("UPSTREAM_ERROR"))
+                .andExpect(jsonPath("$.correlationId").value("corr-502-test"));
+    }
+
+    @Test
+    @DisplayName("Apps Script Data Integrity Error: devuelve 502 BAD_GATEWAY con error DATA_INTEGRITY_ERROR")
+    void appsScriptIntegrityError_devuelve502() throws Exception {
+        TicketLookupService mockService = Mockito.mock(TicketLookupService.class);
+        when(mockService.lookup(any(), any()))
+                .thenThrow(new AppsScriptDataIntegrityException("Boleto premiado sin datos de premio"));
+
+        TicketLookupController controller = new TicketLookupController(mockService);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        Map<String, Object> body = Map.of(
+                "lotteryCode", "LOTRA",
+                "drawNumber", "QA26-1102",
+                "ticketNumber", "9911022000001"
+        );
+
+        mockMvc.perform(post("/api/v1/tickets/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Correlation-Id", "corr-integrity-test")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadGateway())
+                .andExpect(header().string("X-Correlation-Id", "corr-integrity-test"))
+                .andExpect(jsonPath("$.error").value("DATA_INTEGRITY_ERROR"))
+                .andExpect(jsonPath("$.correlationId").value("corr-integrity-test"));
+    }
 }
+
